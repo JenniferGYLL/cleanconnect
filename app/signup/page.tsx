@@ -49,11 +49,11 @@ export default function CompanySignupPage() {
       <main className="flex min-h-screen items-center justify-center bg-surface px-6">
         <div className="max-w-md text-center">
           <h1 className="font-display text-2xl font-semibold text-slate-900">
-            You're almost in
+            You&apos;re almost in
           </h1>
           <p className="mt-3 text-slate-500">
             Check your email to verify your address. Once your account is
-            approved, you'll be able to sign in and see your leads.
+            approved, you&apos;ll be able to sign in and see your leads.
           </p>
           <Link
             href="/login"

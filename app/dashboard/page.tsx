@@ -33,7 +33,7 @@ export default async function DashboardPage() {
           </h1>
           <p className="mt-3 text-slate-500">
             {company.company_name} has been submitted and is pending
-            approval. Once approved, you'll see your leads and reviews here.
+            approval. Once approved, you&apos;ll see your leads and reviews here.
           </p>
         </div>
       </main>
