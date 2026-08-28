@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ReviewForm } from "@/components/dashboard/ReviewForm";
 
 export type Booking = {
   id: string;
@@ -17,12 +18,15 @@ export type Booking = {
 
 export default function CustomerBookingsList({
   customerId,
+  customerName,
   bookings: initialBookings,
 }: {
   customerId: string;
-  bookings: Booking[];
+  customerName: string;
+  bookings: (Booking & { hasReview: boolean })[];
 }) {
   const [bookings, setBookings] = useState(initialBookings);
+  const [justReviewed, setJustReviewed] = useState<string[]>([]);
 
   // 实时监听:公司一更新预约状态或上传照片,这里立刻自动更新,不用刷新页面
   useEffect(() => {
@@ -112,6 +116,19 @@ export default function CustomerBookingsList({
               )}
             </div>
           )}
+          {booking.status === "completed" &&
+            !booking.hasReview &&
+            !justReviewed.includes(booking.id) && (
+              <ReviewForm
+                leadId={booking.id}
+                companyId={booking.company_id}
+                customerId={customerId}
+                customerName={customerName}
+                onSubmitted={() =>
+                  setJustReviewed((prev) => [...prev, booking.id])
+                }
+              />
+            )}
         </li>
       ))}
     </ul>

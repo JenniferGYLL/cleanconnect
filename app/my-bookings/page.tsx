@@ -30,6 +30,20 @@ export default async function MyBookingsPage() {
     .eq("customer_id", user.id)
     .order("created_at", { ascending: false });
 
+  const { data: existingReviews } = await supabase
+    .from("reviews")
+    .select("lead_id")
+    .eq("customer_id", user.id);
+
+  const reviewedLeadIds = new Set(
+    (existingReviews ?? []).map((review) => review.lead_id)
+  );
+
+  const bookingsWithReviewFlag = (bookings ?? []).map((booking) => ({
+    ...booking,
+    hasReview: reviewedLeadIds.has(booking.id),
+  }));
+
   return (
     <main className="min-h-screen bg-surface">
       <header className="border-b border-slate-100 bg-white/80 backdrop-blur-md">
@@ -51,7 +65,8 @@ export default async function MyBookingsPage() {
         <div className="mt-6">
           <CustomerBookingsList
             customerId={user.id}
-            bookings={bookings ?? []}
+            customerName={customer.full_name}
+            bookings={bookingsWithReviewFlag}
           />
         </div>
       </div>
