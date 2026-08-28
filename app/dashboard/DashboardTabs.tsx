@@ -15,6 +15,7 @@ type Lead = {
   before_photo_url: string | null;
   after_photo_url: string | null;
   created_at: string;
+  customers: { full_name: string; phone: string | null } | null;
 };
 
 type Review = {
@@ -106,6 +107,23 @@ export default function DashboardTabs({
     );
   }
 
+  async function handleStatusChange(leadId: string, status: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("leads")
+      .update({ status })
+      .eq("id", leadId);
+
+    if (error) {
+      setToast(`Couldn't update status: ${error.message}`);
+      return;
+    }
+
+    setLeads((prev) =>
+      prev.map((lead) => (lead.id === leadId ? { ...lead, status } : lead))
+    );
+  }
+
   return (
     <div>
       <AnimatePresence>
@@ -148,7 +166,9 @@ export default function DashboardTabs({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-slate-900">
-                      {lead.customer_name ?? "Anonymous customer"}
+                      {lead.customers?.full_name ??
+                        lead.customer_name ??
+                        "Anonymous customer"}
                     </span>
                     <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
                       {lead.status}
@@ -169,6 +189,41 @@ export default function DashboardTabs({
                       Contact: {lead.customer_contact}
                     </p>
                   )}
+
+                  <div className="mt-3 flex gap-2">
+                    {lead.status === "requested" && (
+                      <>
+                        <button
+                          onClick={() => handleStatusChange(lead.id, "accepted")}
+                          className="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(lead.id, "declined")}
+                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 hover:border-slate-300"
+                        >
+                          Decline
+                        </button>
+                      </>
+                    )}
+                    {lead.status === "accepted" && (
+                      <button
+                        onClick={() => handleStatusChange(lead.id, "in_progress")}
+                        className="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700"
+                      >
+                        Start job
+                      </button>
+                    )}
+                    {lead.status === "in_progress" && (
+                      <button
+                        onClick={() => handleStatusChange(lead.id, "completed")}
+                        className="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700"
+                      >
+                        Mark complete
+                      </button>
+                    )}
+                  </div>
 
                   <BeforeAfterUploader
                     leadId={lead.id}
