@@ -1509,7 +1509,9 @@ export async function subscribeToPush(): Promise<
 
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    // 实际运行时才发现:较新版本的 TypeScript 对 Uint8Array 泛型检查更严格,
+    // 不加这个类型断言会导致 `npm run build` 报类型错误,已修正
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
   });
 
   const json = subscription.toJSON();
@@ -1690,11 +1692,22 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
-webpush.setVapidDetails(
-  "mailto:hello@cleanconnect.app",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+// VAPID 密钥要等 Task 10 配置好环境变量才存在;这里改成请求时才初始化,
+// 避免 build 阶段(这时候环境变量还没配好)因为 webpush 校验密钥格式而报错崩溃
+// (实际运行时才发现:放在模块顶层直接调用会导致 `npm run build` 时
+//  "Failed to collect page data for /api/notify" 报错崩溃,已修正为按需初始化)
+let vapidConfigured = false;
+function ensureVapidConfigured(): boolean {
+  if (vapidConfigured) return true;
+
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!publicKey || !privateKey) return false;
+
+  webpush.setVapidDetails("mailto:hello@cleanconnect.app", publicKey, privateKey);
+  vapidConfigured = true;
+  return true;
+}
 
 function serviceClient() {
   return createSupabaseClient(
@@ -1729,6 +1742,13 @@ export async function POST(request: Request) {
   const secret = request.headers.get("x-webhook-secret");
   if (secret !== process.env.SUPABASE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!ensureVapidConfigured()) {
+    return NextResponse.json(
+      { error: "Push notifications are not configured yet" },
+      { status: 503 }
+    );
   }
 
   const payload = (await request.json()) as WebhookPayload;
