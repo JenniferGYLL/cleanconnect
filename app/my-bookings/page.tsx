@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CustomerBookingsList from "@/components/dashboard/CustomerBookingsList";
 import LogoutButton from "@/app/dashboard/LogoutButton";
+import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
 
 export default async function MyBookingsPage() {
   const supabase = createClient();
@@ -54,7 +55,10 @@ export default async function MyBookingsPage() {
             </p>
             <p className="text-xs text-slate-400">{user.email}</p>
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-4">
+            <NotificationOptIn />
+            <LogoutButton />
+          </div>
         </div>
       </header>
 
