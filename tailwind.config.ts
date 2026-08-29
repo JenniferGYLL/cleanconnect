@@ -30,6 +30,15 @@ const config: Config = {
           600: "#0d84b0",
           700: "#0c688c",
         },
+        // Warm brass/gold — the "concierge" accent used sparingly for premium
+        // touches (badges, ratings, small highlights), never as a base color
+        gold: {
+          200: "#f3e2b8",
+          300: "#e8c887",
+          400: "#d9ab56",
+          500: "#c2903c",
+          600: "#9c722e",
+        },
         // Deep teal-tinted ink for dark surfaces — never pure black
         ink: {
           950: "#03110d",
