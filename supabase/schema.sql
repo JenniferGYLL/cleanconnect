@@ -158,7 +158,7 @@ begin
 end $$;
 
 -- 7. (可选)想快速测试仪表盘效果,可以把下面几行的注释去掉,
---    beg把 'YOUR-COMPANY-UUID' 换成你自己账号的 id(在 Supabase 的
+--    并把 'YOUR-COMPANY-UUID' 换成你自己账号的 id(在 Supabase 的
 --    Table Editor -> companies 表里能看到),然后单独运行这几行:
 
 -- update public.companies set approved = true where id = 'YOUR-COMPANY-UUID';
@@ -259,7 +259,7 @@ with
 
 -- 11. 公开的"公司目录"视图,给客户浏览用
 --     只暴露安全的营销字段,不暴露邮箱/电话;顺带算出平均分和评价数
---     order 注意:average_rating 转成 float8、review_count 转成 int,而不是
+--     注意:average_rating 转成 float8、review_count 转成 int,而不是
 --     numeric/bigint —— PostgREST 会把 numeric 和 bigint 序列化成 JSON
 --     字符串(避免精度丢失),那样前端调用 .toFixed(1) 会直接报错。
 create or replace view public.company_directory as
@@ -328,3 +328,24 @@ drop policy if exists "Users manage own push subscriptions" on public.push_subsc
 create policy "Users manage own push subscriptions" on public.push_subscriptions for all using (auth.uid () = user_id)
 with
   check (auth.uid () = user_id);
+
+-- 14. 报价定价规则表 —— 公司在"定价设置"里为每个服务类别设置的
+--     基础价 / 面积系数 / 频次折扣,是 AI 报价建议的计算依据。
+--     category 目前固定三选一: residential / commercial / garden
+create table if not exists public.pricing_rules (
+  id uuid primary key default gen_random_uuid (),
+  company_id uuid references public.companies (id) on delete cascade,
+  category text not null,
+  base_rate numeric not null default 0,
+  size_multiplier numeric not null default 1,
+  frequency_discount_percent numeric not null default 0,
+  updated_at timestamptz not null default now(),
+  unique (company_id, category)
+);
+
+alter table public.pricing_rules enable row level security;
+
+drop policy if exists "Companies manage own pricing rules" on public.pricing_rules;
+create policy "Companies manage own pricing rules" on public.pricing_rules for all using (auth.uid () = company_id)
+with
+  check (auth.uid () = company_id);

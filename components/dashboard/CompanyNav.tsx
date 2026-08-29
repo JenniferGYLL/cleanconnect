@@ -93,7 +93,14 @@ export function CompanyNav({
                   <div className="px-3 py-2 text-xs text-ink-700/60 sm:hidden">
                     <NotificationOptIn />
                   </div>
-                  <div className="px-1 py-1.5 text-xs uppercase tracking-wide text-ink-700/40">
+                  <Link
+                    href="/dashboard/pricing"
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-ink-800 hover:bg-white/70"
+                  >
+                    Pricing settings
+                  </Link>
+                  <div className="px-3 py-1.5 text-xs uppercase tracking-wide text-ink-700/40">
                     Business profile — coming soon
                   </div>
                   <div className="mt-1 border-t border-ink-900/5 px-3 py-2">
