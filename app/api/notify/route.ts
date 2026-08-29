@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     .select("endpoint, p256dh, auth_key")
     .eq("user_id", notification.userId);
 
-  await Promise.all(
+  const results = await Promise.all(
     (subscriptions ?? []).map((sub) =>
       webpush
         .sendNotification(
@@ -82,13 +82,35 @@ export async function POST(request: Request) {
           },
           JSON.stringify({ title: notification.title, body: notification.body })
         )
-        .catch(() => {
-          // 订阅可能已经失效(比如用户清了浏览器数据),忽略单条失败即可
+        .then(() => ({ ok: true as const }))
+        .catch((err: unknown) => {
+          // 订阅可能已经失效(比如用户清了浏览器数据),但先打印出来方便排查,
+          // 不要完全静默吞掉 —— 之前这里什么都不打印,导致 200 返回值掩盖了
+          // 推送真正失败的情况(比如 VAPID 配置错误、订阅信息不对等)
+          const statusCode =
+            typeof err === "object" && err !== null && "statusCode" in err
+              ? (err as { statusCode?: number }).statusCode
+              : undefined;
+          const body =
+            typeof err === "object" && err !== null && "body" in err
+              ? (err as { body?: string }).body
+              : undefined;
+          console.error("web-push sendNotification failed", {
+            endpoint: sub.endpoint,
+            statusCode,
+            body,
+            message: err instanceof Error ? err.message : String(err),
+          });
+          return { ok: false as const };
         })
     )
   );
 
-  return NextResponse.json({ notified: subscriptions?.length ?? 0 });
+  return NextResponse.json({
+    notified: subscriptions?.length ?? 0,
+    sent: results.filter((r) => r.ok).length,
+    failed: results.filter((r) => !r.ok).length,
+  });
 }
 
 function resolveNotification(payload: WebhookPayload): Notification | null {
