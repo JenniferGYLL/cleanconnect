@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { SpotlightCard } from "@/components/motion/SpotlightCard";
+import { useClickHalo } from "@/components/motion/ClickHalo";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -14,6 +16,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const { field: haloField, onClick: onHaloClick } = useClickHalo();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,11 +50,15 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="bg-grain relative flex min-h-dvh items-center justify-center overflow-hidden bg-foam-50 px-6 py-16">
+    <main
+      onClick={onHaloClick}
+      className="bg-grain relative flex min-h-dvh items-center justify-center overflow-hidden bg-foam-50 px-6 py-16"
+    >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-mesh-1 opacity-70"
+        className="pointer-events-none absolute inset-0 bg-mesh-1 opacity-80"
       />
+      {haloField}
 
       <div className="relative w-full max-w-sm">
         <FadeIn>
@@ -113,13 +120,32 @@ export default function ResetPasswordPage() {
                   </p>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full py-2.5"
-                >
-                  {loading ? "Updating…" : "Update password"}
-                </button>
+                <div className="relative">
+                  {loading && (
+                    <motion.span
+                      aria-hidden
+                      className="absolute -inset-2 -z-10 rounded-full bg-gold-400/40 blur-lg"
+                      animate={{
+                        opacity: [0.3, 0.7, 0.3],
+                        scale: [0.96, 1.04, 0.96],
+                      }}
+                      transition={{
+                        duration: 1.4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  )}
+                  <motion.button
+                    type="submit"
+                    disabled={loading}
+                    whileTap={{ scale: 0.94 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    className="btn-primary w-full py-2.5"
+                  >
+                    {loading ? "Updating…" : "Update password"}
+                  </motion.button>
+                </div>
               </form>
             )}
           </SpotlightCard>

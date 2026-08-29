@@ -62,7 +62,7 @@ const config: Config = {
       backgroundImage: {
         "brand-gradient": "linear-gradient(135deg, #0a8f76 0%, #1aa9d6 100%)",
         "mesh-1":
-          "radial-gradient(circle at 15% 18%, rgba(20,179,145,0.22), transparent 42%), radial-gradient(circle at 82% 12%, rgba(26,169,214,0.20), transparent 45%), radial-gradient(circle at 65% 70%, rgba(111,224,200,0.24), transparent 48%), radial-gradient(circle at 10% 85%, rgba(79,203,236,0.16), transparent 50%)",
+          "radial-gradient(circle at 15% 18%, rgba(20,179,145,0.32), transparent 42%), radial-gradient(circle at 82% 12%, rgba(217,171,86,0.26), transparent 45%), radial-gradient(circle at 65% 70%, rgba(111,224,200,0.34), transparent 48%), radial-gradient(circle at 10% 85%, rgba(79,203,236,0.24), transparent 50%)",
         "mesh-dark":
           "radial-gradient(circle at 20% 20%, rgba(20,179,145,0.30), transparent 45%), radial-gradient(circle at 85% 30%, rgba(79,203,236,0.22), transparent 50%), radial-gradient(circle at 50% 90%, rgba(10,143,118,0.35), transparent 55%)",
       },
