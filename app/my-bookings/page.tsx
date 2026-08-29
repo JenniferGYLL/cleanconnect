@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CustomerBookingsList from "@/components/dashboard/CustomerBookingsList";
@@ -56,6 +57,12 @@ export default async function MyBookingsPage() {
             <p className="text-xs text-slate-400">{user.email}</p>
           </div>
           <div className="flex items-center gap-4">
+            <Link
+              href="/browse"
+              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+            >
+              Browse companies
+            </Link>
             <NotificationOptIn />
             <LogoutButton />
           </div>
