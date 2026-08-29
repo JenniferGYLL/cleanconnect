@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: table `public.customers(id, full_name, email, phone, created_at)`; `public.leads` gains `customer_id uuid`; `public.reviews` gains `customer_id uuid`, `lead_id uuid`; view `public.company_directory(id, company_name, service_area, created_at, average_rating, review_count)`; table `public.push_subscriptions(id, user_id, endpoint, p256dh, auth_key, created_at)`. All later tasks read/write these.
 
-- [ ] **Step 1: Append the customers table, role-aware signup trigger, and booking/review/directory/push changes to `supabase/schema.sql`**
+- [x] **Step 1: Append the customers table, role-aware signup trigger, and booking/review/directory/push changes to `supabase/schema.sql`**
 
 Add this block to the end of the existing `supabase/schema.sql` (after the current line 171):
 
@@ -197,11 +197,11 @@ with
   check (auth.uid () = user_id);
 ```
 
-- [ ] **Step 2: Run it in Supabase**
+- [x] **Step 2: Run it in Supabase**
 
 Open the Supabase project → SQL Editor → paste the entire updated `supabase/schema.sql` (the original content plus the new block above) → Run.
 
-- [ ] **Step 3: Verify manually**
+- [x] **Step 3: Verify manually**
 
 In the same SQL Editor, run each of these and confirm the result described:
 
@@ -222,7 +222,7 @@ where table_schema = 'public' and table_name = 'leads' and column_name = 'custom
 ```
 Expected: one row returned.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 This change lives only in `supabase/schema.sql` (already tracked in git) and the live Supabase database (via the SQL Editor run in Step 2) — there is no separate migration file to commit. Stage and commit the updated `supabase/schema.sql`:
 
@@ -246,11 +246,11 @@ git commit -m "Add customer accounts, booking status, directory view, push subsc
 - Consumes: Task 1's `customers` table and role-aware trigger.
 - Produces: routes `/signup/company`, `/signup/customer`, `/account` that later tasks link to.
 
-- [ ] **Step 1: Move the existing company signup form to `app/signup/company/page.tsx`**
+- [x] **Step 1: Move the existing company signup form to `app/signup/company/page.tsx`**
 
 Copy the current full content of `app/signup/page.tsx` (unchanged) into a new file `app/signup/company/page.tsx`. Do not modify its contents — it is a straight move.
 
-- [ ] **Step 2: Replace `app/signup/page.tsx` with a role chooser**
+- [x] **Step 2: Replace `app/signup/page.tsx` with a role chooser**
 
 ```tsx
 import Link from "next/link";
@@ -302,7 +302,7 @@ export default function SignupChooserPage() {
 }
 ```
 
-- [ ] **Step 3: Create `app/signup/customer/page.tsx`**
+- [x] **Step 3: Create `app/signup/customer/page.tsx`**
 
 ```tsx
 "use client";
@@ -466,7 +466,7 @@ export default function CustomerSignupPage() {
 }
 ```
 
-- [ ] **Step 4: Create `app/account/page.tsx`**
+- [x] **Step 4: Create `app/account/page.tsx`**
 
 ```tsx
 import { redirect } from "next/navigation";
@@ -508,7 +508,7 @@ export default async function AccountRedirectPage() {
 }
 ```
 
-- [ ] **Step 5: Update `app/login/page.tsx` to redirect to `/account`**
+- [x] **Step 5: Update `app/login/page.tsx` to redirect to `/account`**
 
 In `app/login/page.tsx`, change line 33 from:
 
@@ -522,11 +522,11 @@ to:
     router.push("/account");
 ```
 
-- [ ] **Step 6: Verify manually**
+- [x] **Step 6: Verify manually**
 
 Run `npm run dev`. Visit `/signup` — confirm two buttons appear. Click "I'm a customer" — confirm the customer form renders at `/signup/customer`. Submit it with a test email/password — confirm the "You're almost in" screen appears. In the Supabase Table Editor, confirm a new row appeared in `customers` (not `companies`) with the right `full_name`. Go to `/signup/company` directly and confirm the original company form still renders unchanged. Log in with the test customer account at `/login` — confirm it lands on `/account` then immediately redirects (since `/my-bookings` doesn't exist until Task 6, this will 404 for now — that 404 is expected and confirms the redirect logic worked; it will resolve once Task 6 ships).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/signup app/account app/login/page.tsx
@@ -545,7 +545,7 @@ git commit -m "Split signup by role (customer/company) and add post-login redire
 - Consumes: Task 1's `public.company_directory` view.
 - Produces: route `/browse`; `CompanyCard` component reused nowhere else yet.
 
-- [ ] **Step 1: Create `components/browse/CompanyCard.tsx`**
+- [x] **Step 1: Create `components/browse/CompanyCard.tsx`**
 
 ```tsx
 import Link from "next/link";
@@ -585,7 +585,7 @@ export function CompanyCard({ company }: { company: DirectoryCompany }) {
 }
 ```
 
-- [ ] **Step 2: Create `app/browse/page.tsx`**
+- [x] **Step 2: Create `app/browse/page.tsx`**
 
 ```tsx
 import { createClient } from "@/lib/supabase/server";
@@ -628,11 +628,11 @@ export default async function BrowsePage() {
 }
 ```
 
-- [ ] **Step 3: Verify manually**
+- [x] **Step 3: Verify manually**
 
 In Supabase Table Editor, temporarily set `approved = true` on the CGC company row you signed up earlier (same manual step already documented in `supabase/schema.sql`'s comments). Visit `/browse` — confirm CGC appears in the list with "No reviews yet". Set `approved` back to whatever state you actually want before moving on if you were only testing.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/browse/page.tsx components/browse/CompanyCard.tsx
@@ -651,7 +651,7 @@ git commit -m "Add public company directory page"
 - Consumes: Task 1's `company_directory` view and `reviews`/`customers` tables, Task 3's route structure.
 - Produces: route `/browse/[companyId]`; `BookingForm` inserts into `public.leads`, consumed nowhere else.
 
-- [ ] **Step 1: Create `components/browse/BookingForm.tsx`**
+- [x] **Step 1: Create `components/browse/BookingForm.tsx`**
 
 ```tsx
 "use client";
@@ -785,7 +785,7 @@ export function BookingForm({
 
 Note: this reuses the existing `leads.customer_contact` text column to store the booking address (the column already exists and this plan does not add a separate `address` column — YAGNI, one text field is enough for v1).
 
-- [ ] **Step 2: Create `app/browse/[companyId]/page.tsx`**
+- [x] **Step 2: Create `app/browse/[companyId]/page.tsx`**
 
 ```tsx
 import { notFound } from "next/navigation";
@@ -900,11 +900,11 @@ export default async function CompanyProfilePage({
 }
 ```
 
-- [ ] **Step 3: Verify manually**
+- [x] **Step 3: Verify manually**
 
 With CGC's company row `approved = true` (from Task 3's verification), visit `/browse/<CGC's id>` directly (copy the id from the Supabase Table Editor) — confirm the company name, "No reviews yet", and the booking form's sign-in prompt (since you're not logged in) all render. Log in as the test customer created in Task 2 — revisit the same URL — confirm the real booking form (service type / address / message) now renders instead of the sign-in prompt. Submit it — confirm the "Request sent" confirmation appears. In Supabase Table Editor, confirm a new row appeared in `leads` with `customer_id` set to the test customer's id and `status = 'requested'`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/browse/[companyId] components/browse/BookingForm.tsx
@@ -923,7 +923,7 @@ git commit -m "Add company profile page with booking request form"
 - Consumes: Task 1's `customers` table + the "Companies view customers who booked with them" policy, Task 4's `leads` rows.
 - Produces: nothing new consumed by later tasks (the status values `requested`/`accepted`/`declined`/`in_progress`/`completed` are referenced by Task 6/7's UI, which read them directly from the `leads` rows rather than importing anything from this task).
 
-- [ ] **Step 1: Modify `app/dashboard/page.tsx` to join customer info**
+- [x] **Step 1: Modify `app/dashboard/page.tsx` to join customer info**
 
 Change the leads query (currently `.select("*")` on line 46) to embed the linked customer:
 
@@ -935,7 +935,7 @@ Change the leads query (currently `.select("*")` on line 46) to embed the linked
       .order("created_at", { ascending: false }),
 ```
 
-- [ ] **Step 2: Modify `app/dashboard/DashboardTabs.tsx` to add status actions and display the joined customer**
+- [x] **Step 2: Modify `app/dashboard/DashboardTabs.tsx` to add status actions and display the joined customer**
 
 Update the `Lead` type (lines 8-18) to include the embedded customer and drop nothing existing:
 
@@ -1024,11 +1024,11 @@ Add status action buttons right after the `customer_contact` block (after line 1
                   </div>
 ```
 
-- [ ] **Step 3: Verify manually**
+- [x] **Step 3: Verify manually**
 
 Log in to `/dashboard` as CGC. Confirm the booking submitted in Task 4 now shows the test customer's real name (not "Anonymous customer") and an "Accept" / "Decline" button pair. Click "Accept" — confirm the button row changes to "Start job" with no page reload. Click "Start job", then "Mark complete" — confirm each transition updates immediately. In the Supabase Table Editor, confirm the `leads.status` column reflects `completed`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/dashboard/page.tsx app/dashboard/DashboardTabs.tsx
@@ -1047,7 +1047,7 @@ git commit -m "Add booking status actions and real customer name to company dash
 - Consumes: Task 1's `leads` RLS policies (customer can select own), Task 2's `/account` redirect target.
 - Produces: route `/my-bookings`; `CustomerBookingsList` renders reviews via Task 7's `ReviewForm` (added in that task — this task renders the list without a review action yet).
 
-- [ ] **Step 1: Create `components/dashboard/CustomerBookingsList.tsx`**
+- [x] **Step 1: Create `components/dashboard/CustomerBookingsList.tsx`**
 
 ```tsx
 "use client";
@@ -1171,7 +1171,7 @@ export default function CustomerBookingsList({
 }
 ```
 
-- [ ] **Step 2: Create `app/my-bookings/page.tsx`**
+- [x] **Step 2: Create `app/my-bookings/page.tsx`**
 
 ```tsx
 import { redirect } from "next/navigation";
@@ -1238,11 +1238,11 @@ export default async function MyBookingsPage() {
 
 Note: this reuses `app/dashboard/LogoutButton.tsx` directly via import — no need to duplicate it, since it has no company-specific logic (it only calls `supabase.auth.signOut()`).
 
-- [ ] **Step 3: Verify manually**
+- [x] **Step 3: Verify manually**
 
 Log in as the test customer. Confirm redirect via `/account` now lands on `/my-bookings` (the 404 from Task 2's verification is resolved). Confirm the booking created in Task 4 appears with its current status. In a second browser/incognito window logged in as CGC, change the booking's status in `/dashboard` — confirm the status label updates on `/my-bookings` within a couple of seconds without a manual refresh. Upload a before/after photo from the company side — confirm both images appear on the customer's booking card in real time.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/my-bookings components/dashboard/CustomerBookingsList.tsx
@@ -1261,7 +1261,7 @@ git commit -m "Add customer bookings dashboard with realtime status and photo sy
 - Consumes: Task 1's reviews insert policy (requires `status = 'completed'`), Task 6's `Booking` type and list component.
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Create `components/dashboard/ReviewForm.tsx`**
+- [x] **Step 1: Create `components/dashboard/ReviewForm.tsx`**
 
 ```tsx
 "use client";
@@ -1351,7 +1351,7 @@ export function ReviewForm({
 }
 ```
 
-- [ ] **Step 2: Wire it into `components/dashboard/CustomerBookingsList.tsx`**
+- [x] **Step 2: Wire it into `components/dashboard/CustomerBookingsList.tsx`**
 
 Add the import at the top:
 
@@ -1398,7 +1398,7 @@ Add the review action inside each `<li>`, right after the before/after photo blo
             )}
 ```
 
-- [ ] **Step 3: Pass the new props from `app/my-bookings/page.tsx`**
+- [x] **Step 3: Pass the new props from `app/my-bookings/page.tsx`**
 
 In `app/my-bookings/page.tsx`, after fetching `bookings`, also fetch which of those bookings already have a review, and pass `customerName`:
 
@@ -1434,11 +1434,11 @@ And update the `<CustomerBookingsList` usage to:
           />
 ```
 
-- [ ] **Step 4: Verify manually**
+- [x] **Step 4: Verify manually**
 
 With the test booking already `completed` (from Task 5's verification), reload `/my-bookings` as the test customer — confirm a star-rating form appears under that booking. Submit a 5-star review with a comment — confirm the form disappears immediately. In Supabase Table Editor, confirm a new `reviews` row exists with `lead_id`, `customer_id`, and `company_id` all set correctly. Visit `/browse/<CGC's id>` — confirm the new review now appears in the public reviews list and the average rating updates. Try submitting a second review for the same booking directly via the Supabase SQL Editor (`insert into reviews (company_id, customer_id, lead_id, rating) values (...)` with the same `lead_id`) — confirm it is rejected by the unique index.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add components/dashboard/ReviewForm.tsx components/dashboard/CustomerBookingsList.tsx app/my-bookings/page.tsx
@@ -1461,7 +1461,7 @@ git commit -m "Let customers review completed bookings"
 - Consumes: Task 1's `push_subscriptions` table and RLS policy.
 - Produces: `public_subscriptions` rows that Task 9's notify route reads; `NEXT_PUBLIC_VAPID_PUBLIC_KEY` env var (set in Task 10) that `lib/push/subscribe.ts` reads.
 
-- [ ] **Step 1: Create `public/sw.js`**
+- [x] **Step 1: Create `public/sw.js`**
 
 ```js
 self.addEventListener("push", (event) => {
@@ -1481,7 +1481,7 @@ self.addEventListener("notificationclick", (event) => {
 });
 ```
 
-- [ ] **Step 2: Create `lib/push/subscribe.ts`**
+- [x] **Step 2: Create `lib/push/subscribe.ts`**
 
 ```ts
 "use client";
@@ -1541,7 +1541,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 ```
 
-- [ ] **Step 3: Create `app/api/push/subscribe/route.ts`**
+- [x] **Step 3: Create `app/api/push/subscribe/route.ts`**
 
 ```ts
 import { NextResponse } from "next/server";
@@ -1589,7 +1589,7 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 4: Create `components/notifications/NotificationOptIn.tsx`**
+- [x] **Step 4: Create `components/notifications/NotificationOptIn.tsx`**
 
 ```tsx
 "use client";
@@ -1629,7 +1629,7 @@ export function NotificationOptIn() {
 }
 ```
 
-- [ ] **Step 5: Add the opt-in to both dashboards**
+- [x] **Step 5: Add the opt-in to both dashboards**
 
 In `app/dashboard/page.tsx`, import it:
 
@@ -1648,16 +1648,18 @@ and render it next to `<LogoutButton />` in the header (wrap both in a flex cont
 
 Do the same in `app/my-bookings/page.tsx`.
 
-- [ ] **Step 6: Verify manually**
+- [x] **Step 6: Verify manually**
 
 This step needs `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to exist (Task 10) to fully work — for now, confirm the button renders and clicking it prompts the browser's native notification permission dialog (it will fail after that with no `NEXT_PUBLIC_VAPID_PUBLIC_KEY` set yet — that's expected; full verification happens at the end of Task 10).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
-git add public/sw.js lib/push components/notifications app/dashboard/page.tsx app/my-bookings/page.tsx
+git add public/sw.js lib/push components/notifications app/api/push app/dashboard/page.tsx app/my-bookings/page.tsx
 git commit -m "Add Web Push subscription opt-in to both dashboards"
 ```
+
+> **Bug found during Task 10 verification:** this `git add` command originally omitted `app/api/push` (the `app/api/push/subscribe/route.ts` file from Step 3), so that route was never committed or deployed. The client-side subscribe flow silently "succeeded" anyway — `fetch()` doesn't throw on a 404 response, it only throws on a network failure — so the button correctly showed "subscribed" even though the save to `push_subscriptions` failed every time. This is why `push_subscriptions` stayed empty despite the opt-in button appearing to work: diagnosed via the browser's JavaScript console (Safari: Develop menu → Show JavaScript Console), which showed `Failed to load resource: the server responded with a status of 404 () — /api/push/subscribe`. Fixed by committing the missing file as its own follow-up commit once caught. The command above is corrected so a future run of this plan won't repeat the omission.
 
 ---
 
@@ -1671,7 +1673,7 @@ git commit -m "Add Web Push subscription opt-in to both dashboards"
 - Consumes: Task 8's `push_subscriptions` rows; env vars `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_WEBHOOK_SECRET` (all set in Task 10).
 - Produces: route `/api/notify`, the target Task 10's Database Webhooks call.
 
-- [ ] **Step 1: Add `web-push` to `package.json`**
+- [x] **Step 1: Add `web-push` to `package.json`**
 
 In `package.json`, add to `dependencies` (alongside the existing entries):
 
@@ -1685,7 +1687,7 @@ and to `devDependencies`:
     "@types/web-push": "^3.6.4",
 ```
 
-- [ ] **Step 2: Create `app/api/notify/route.ts`**
+- [x] **Step 2: Create `app/api/notify/route.ts`**
 
 ```ts
 import { NextResponse } from "next/server";
@@ -1764,7 +1766,7 @@ export async function POST(request: Request) {
     .select("endpoint, p256dh, auth_key")
     .eq("user_id", notification.userId);
 
-  await Promise.all(
+  const results = await Promise.all(
     (subscriptions ?? []).map((sub) =>
       webpush
         .sendNotification(
@@ -1774,14 +1776,38 @@ export async function POST(request: Request) {
           },
           JSON.stringify({ title: notification.title, body: notification.body })
         )
-        .catch(() => {
-          // 订阅可能已经失效(比如用户清了浏览器数据),忽略单条失败即可
+        .then(() => ({ ok: true as const }))
+        .catch((err: unknown) => {
+          // 订阅可能已经失效(比如用户清了浏览器数据),但先打印出来方便排查,
+          // 不要完全静默吞掉 —— 之前这里什么都不打印,导致 200 返回值掩盖了
+          // 推送真正失败的情况(比如 VAPID 配置错误、订阅信息不对等)
+          const statusCode =
+            typeof err === "object" && err !== null && "statusCode" in err
+              ? (err as { statusCode?: number }).statusCode
+              : undefined;
+          const body =
+            typeof err === "object" && err !== null && "body" in err
+              ? (err as { body?: string }).body
+              : undefined;
+          console.error("web-push sendNotification failed", {
+            endpoint: sub.endpoint,
+            statusCode,
+            body,
+            message: err instanceof Error ? err.message : String(err),
+          });
+          return { ok: false as const };
         })
     )
   );
 
-  return NextResponse.json({ notified: subscriptions?.length ?? 0 });
+  return NextResponse.json({
+    notified: subscriptions?.length ?? 0,
+    sent: results.filter((r) => r.ok).length,
+    failed: results.filter((r) => !r.ok).length,
+  });
 }
+
+> **Bug found during Task 10 verification:** the original `.catch(() => {})` silently swallowed any error from `webpush.sendNotification()`, so `/api/notify` always returned `200 { notified: N }` even when the actual push to Apple/Chrome's push service failed — there was no way to tell "the pipeline ran" from "the notification actually sent". Fixed by logging the caught error (status code + body from web-push's error object) and returning `sent`/`failed` counts in the response, so a passing webhook call with `failed > 0` is now visible instead of looking identical to success.
 
 function resolveNotification(payload: WebhookPayload): Notification | null {
   if (payload.table === "leads") {
@@ -1844,11 +1870,11 @@ function resolveNotification(payload: WebhookPayload): Notification | null {
 }
 ```
 
-- [ ] **Step 3: Verify manually**
+- [x] **Step 3: Verify manually**
 
 Run `npm install` (picks up the new `web-push` dependency), then `npm run build` — confirm it compiles with no TypeScript errors. This route can't be fully exercised until Task 10 sets its env vars and configures the Database Webhooks — full verification happens in Task 11.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add package.json package-lock.json app/api/notify/route.ts
@@ -1864,7 +1890,7 @@ git commit -m "Add push notification sender API route"
 **Interfaces:**
 - Produces: the env vars and Database Webhooks that Task 9's route depends on.
 
-- [ ] **Step 1: Generate a VAPID key pair**
+- [x] **Step 1: Generate a VAPID key pair**
 
 In a Terminal at `~/Desktop/cleanconnect` (after Task 9's `npm install` has run so `web-push` is installed), run:
 
@@ -1874,11 +1900,11 @@ npx web-push generate-vapid-keys
 
 This prints a Public Key and a Private Key. Save both somewhere safe — the private key is only shown once.
 
-- [ ] **Step 2: Generate a webhook secret**
+- [x] **Step 2: Generate a webhook secret**
 
 Any random string works — for example, run `openssl rand -hex 32` in the same Terminal and copy its output.
 
-- [ ] **Step 3: Set environment variables in Vercel**
+- [x] **Step 3: Set environment variables in Vercel**
 
 In the Vercel dashboard → the `cleanconnect` project → Settings → Environment Variables, add these four (Production environment, same place `NEXT_PUBLIC_SUPABASE_URL` was set earlier):
 
@@ -1891,7 +1917,7 @@ In the Vercel dashboard → the `cleanconnect` project → Settings → Environm
 
 Redeploy (Vercel → Deployments → the latest one → "Redeploy") so the new env vars take effect.
 
-- [ ] **Step 4: Configure Database Webhooks in Supabase**
+- [x] **Step 4: Configure Database Webhooks in Supabase**
 
 In the Supabase dashboard → Database → Webhooks → "Create a new hook":
 
@@ -1910,11 +1936,13 @@ Create a second hook the same way:
 - Events: `Insert`
 - Same URL and header as above
 
-- [ ] **Step 5: Verify manually**
+**实际运行时才发现:** 这个项目的 Webhooks 可视化界面报错 `ERROR: 3F000: schema "supabase_functions" does not exist`——项目本身缺了这个界面依赖的底层 schema,不是操作问题。绕过办法是不用这个界面,改成在 SQL Editor 里直接跑 `supabase/webhooks.sql`(内容见该文件),用 `pg_net` 扩展自己建一个触发器,效果完全一样:`leads`(insert/update)和 `reviews`(insert)一有变化就会给 `/api/notify` 发 HTTP POST 请求。
+
+- [x] **Step 5: Verify manually**
 
 Log in as the test customer on `/my-bookings`, click "Turn on notifications", accept the browser prompt. Do the same as CGC on `/dashboard`. From the company side, change a booking's status — confirm a browser notification appears for the customer within a few seconds. Submit a new booking as the customer — confirm CGC gets a notification. Leave a review as the customer — confirm CGC gets a notification for that too.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Nothing to commit — this task only touches the Vercel and Supabase dashboards, not the git repository.
 
@@ -1924,18 +1952,18 @@ Nothing to commit — this task only touches the Vercel and Supabase dashboards,
 
 **Files:** none — this is the full walkthrough from the spec's testing plan, run once all prior tasks are deployed.
 
-- [ ] **Step 1: Full loop as a fresh pair of accounts**
+- [x] **Step 1: Full loop as a fresh pair of accounts**
 
 Sign up a brand-new test customer (different email than any used above). Visit `/browse`, confirm CGC appears. Open its profile, submit a booking. Log in as CGC in a separate browser/incognito, confirm the booking appears in the dashboard in real time, accept it, mark in-progress, upload before/after photos, mark completed. Back on the customer's `/my-bookings`, confirm status and both photos updated without a manual refresh. Submit a review. Confirm it appears on CGC's public `/browse/<id>` profile and the average rating updates.
 
-- [ ] **Step 2: RLS spot-check**
+- [x] **Step 2: RLS spot-check**
 
 In the Supabase SQL Editor, run (as the `postgres` role, which bypasses RLS, so instead use the "Run as" / authenticated-role testing feature, or simpler: from the app itself) — log in as one test customer and try navigating to a booking URL that isn't shown to them (there is no direct booking detail route in this plan, so this check is really: confirm `/my-bookings` for customer A never shows customer B's bookings, which the query in Task 6 already guarantees by filtering on `customer_id=eq.<uid>` plus the Task 1 RLS policy). Confirm this holds by comparing what two different test customer accounts see on `/my-bookings`.
 
-- [ ] **Step 3: Push notification confirmation**
+- [x] **Step 3: Push notification confirmation**
 
 Repeat Task 10 Step 5's verification once more end-to-end with the fresh accounts from Step 1, confirming both directions (customer→company on new booking/review, company→customer on status/photo changes).
 
-- [ ] **Step 4: Deploy**
+- [x] **Step 4: Deploy**
 
 If every prior task's commits haven't already triggered a Vercel deploy (they will have, automatically, since Vercel deploys on every push to `main`), confirm the latest deployment on the Vercel Deployments page shows "Ready".
