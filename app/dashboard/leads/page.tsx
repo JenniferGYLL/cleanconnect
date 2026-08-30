@@ -3,6 +3,10 @@ import { requireCompany } from "@/lib/dashboard/requireCompany";
 import { CompanyNav } from "@/components/dashboard/CompanyNav";
 import { LeadsBoard } from "@/components/dashboard/LeadsBoard";
 import { FadeIn } from "@/components/motion/FadeIn";
+import type { Category, PricingRule, PricingProfile } from "@/lib/quoting/estimate";
+import type { QuoteRow } from "@/components/dashboard/QuoteBuilder";
+
+type QuoteWithLead = QuoteRow & { lead_id: string };
 
 export default async function LeadsPage() {
   const { supabase, user, company } = await requireCompany();
@@ -11,7 +15,13 @@ export default async function LeadsPage() {
     redirect("/dashboard");
   }
 
-  const [{ data: leads }, { data: reviews }] = await Promise.all([
+  const [
+    { data: leads },
+    { data: reviews },
+    { data: ruleRows },
+    { data: profileRow },
+    { data: quoteRows },
+  ] = await Promise.all([
     supabase
       .from("leads")
       .select("*, customers(full_name, phone)")
@@ -22,7 +32,64 @@ export default async function LeadsPage() {
       .select("*")
       .eq("company_id", user.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("pricing_rules")
+      .select("category, base_rate, size_multiplier, frequency_discount_percent")
+      .eq("company_id", user.id),
+    supabase
+      .from("company_pricing_profiles")
+      .select("*")
+      .eq("company_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("quotes")
+      .select(
+        "id, lead_id, final_price, final_hours, final_cleaners, confidence, status, addons, created_at"
+      )
+      .eq("company_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
+
+  const pricingRules: Record<Category, PricingRule | null> = {
+    residential: null,
+    commercial: null,
+    garden: null,
+  };
+  for (const row of ruleRows ?? []) {
+    const category = row.category as Category;
+    if (category in pricingRules) {
+      pricingRules[category] = {
+        base_rate: Number(row.base_rate),
+        size_multiplier: Number(row.size_multiplier),
+        frequency_discount_percent: Number(row.frequency_discount_percent),
+      };
+    }
+  }
+
+  const pricingProfile: PricingProfile | null = profileRow
+    ? {
+        min_job_charge: Number(profileRow.min_job_charge),
+        min_cleaners: Number(profileRow.min_cleaners),
+        labour_cost_per_hour: Number(profileRow.labour_cost_per_hour),
+        margin_target_percent: Number(profileRow.margin_target_percent),
+        gst_included: Boolean(profileRow.gst_included),
+        travel_fee: Number(profileRow.travel_fee),
+        addon_oven: Number(profileRow.addon_oven),
+        addon_fridge: Number(profileRow.addon_fridge),
+        addon_windows: Number(profileRow.addon_windows),
+        addon_carpet: Number(profileRow.addon_carpet),
+        addon_other_label: profileRow.addon_other_label ?? null,
+        addon_other_price: Number(profileRow.addon_other_price),
+      }
+    : null;
+
+  // Keep only the most recent quote per lead (rows already newest-first).
+  const quotesByLead: Record<string, QuoteRow> = {};
+  for (const quote of (quoteRows ?? []) as QuoteWithLead[]) {
+    if (!quotesByLead[quote.lead_id]) {
+      quotesByLead[quote.lead_id] = quote;
+    }
+  }
 
   return (
     <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24 pt-6">
@@ -52,6 +119,9 @@ export default async function LeadsPage() {
               companyId={user.id}
               leads={leads ?? []}
               reviews={reviews ?? []}
+              pricingRules={pricingRules}
+              pricingProfile={pricingProfile}
+              quotesByLead={quotesByLead}
             />
           </FadeIn>
         </div>

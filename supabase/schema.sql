@@ -349,3 +349,135 @@ drop policy if exists "Companies manage own pricing rules" on public.pricing_rul
 create policy "Companies manage own pricing rules" on public.pricing_rules for all using (auth.uid () = company_id)
 with
   check (auth.uid () = company_id);
+
+-- 15. AI 报价引擎 —— 客户需求结构化字段 + 公司完整定价档案 + 报价单表
+--     阶段一(MVP)范围:确定性计算,不接历史数据、不接图片、不接自然语言。
+
+-- leads 表加上结构化字段,客户预约的时候直接选,而不是靠自由文本猜
+alter table public.leads
+add column if not exists category text;
+
+alter table public.leads
+add column if not exists bedrooms int;
+
+alter table public.leads
+add column if not exists bathrooms int;
+
+alter table public.leads
+add column if not exists property_condition text;
+
+alter table public.leads
+add column if not exists job_frequency text;
+
+alter table public.leads
+add column if not exists job_type text;
+
+-- 公司的完整定价档案(每家公司一行):最低收费、最少清洁工人数、
+-- 实际人工成本(用来算利润,不等于对客户收的钱)、目标利润率、
+-- GST、上门费、四项常见附加服务价格
+create table if not exists public.company_pricing_profiles (
+  company_id uuid references public.companies (id) on delete cascade primary key,
+  min_job_charge numeric not null default 0,
+  min_cleaners int not null default 1,
+  labour_cost_per_hour numeric not null default 0,
+  margin_target_percent numeric not null default 30,
+  gst_included boolean not null default true,
+  travel_fee numeric not null default 0,
+  addon_oven numeric not null default 0,
+  addon_fridge numeric not null default 0,
+  addon_windows numeric not null default 0,
+  addon_carpet numeric not null default 0,
+  addon_other_label text,
+  addon_other_price numeric not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.company_pricing_profiles enable row level security;
+
+drop policy if exists "Companies manage own pricing profile" on public.company_pricing_profiles;
+create policy "Companies manage own pricing profile" on public.company_pricing_profiles for all using (auth.uid () = company_id)
+with
+  check (auth.uid () = company_id);
+
+-- 报价单表:AI 原始建议和公司最终确认的数字分开存,方便审计
+-- (谁批准的、什么时候批准的、跟 AI 原本建议的差多少,都能查到)
+create table if not exists public.quotes (
+  id uuid primary key default gen_random_uuid (),
+  company_id uuid references public.companies (id) on delete cascade,
+  lead_id uuid references public.leads (id) on delete cascade,
+  customer_id uuid references public.customers (id),
+  ai_hours_min numeric,
+  ai_hours_max numeric,
+  ai_price_min numeric,
+  ai_price_max numeric,
+  confidence text,
+  confidence_reason text,
+  final_cleaners int,
+  final_hours numeric,
+  final_price numeric,
+  margin_percent numeric,
+  addons jsonb not null default '{}'::jsonb,
+  status text not null default 'draft',
+  created_at timestamptz not null default now(),
+  approved_at timestamptz,
+  approved_by uuid
+);
+
+alter table public.quotes enable row level security;
+
+drop policy if exists "Companies manage own quotes" on public.quotes;
+create policy "Companies manage own quotes" on public.quotes for all using (auth.uid () = company_id)
+with
+  check (auth.uid () = company_id);
+
+-- Customers can only ever see a quote once the company has sent it —
+-- never a draft the company is still working on.
+drop policy if exists "Customers view own quotes" on public.quotes;
+create policy "Customers view own quotes" on public.quotes
+  for select using (auth.uid () = customer_id and status <> 'draft');
+
+-- Customers are allowed to update their own quote row (to accept it), but
+-- RLS alone can't stop them changing the price in the same request — so a
+-- trigger enforces that a customer-initiated update can only ever flip a
+-- 'sent' quote to 'accepted', with every other column pinned to its old
+-- value. The company's own "manage own quotes" policy is untouched by this.
+drop policy if exists "Customers accept own quotes" on public.quotes;
+create policy "Customers accept own quotes" on public.quotes for update using (auth.uid () = customer_id)
+with
+  check (auth.uid () = customer_id);
+
+create or replace function public.protect_customer_quote_update()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  if auth.uid() = OLD.customer_id and auth.uid() <> OLD.company_id then
+    if OLD.status <> 'sent' or NEW.status <> 'accepted' then
+      raise exception 'Customers can only accept a quote that has been sent';
+    end if;
+    NEW.company_id := OLD.company_id;
+    NEW.lead_id := OLD.lead_id;
+    NEW.customer_id := OLD.customer_id;
+    NEW.ai_hours_min := OLD.ai_hours_min;
+    NEW.ai_hours_max := OLD.ai_hours_max;
+    NEW.ai_price_min := OLD.ai_price_min;
+    NEW.ai_price_max := OLD.ai_price_max;
+    NEW.confidence := OLD.confidence;
+    NEW.confidence_reason := OLD.confidence_reason;
+    NEW.final_cleaners := OLD.final_cleaners;
+    NEW.final_hours := OLD.final_hours;
+    NEW.final_price := OLD.final_price;
+    NEW.margin_percent := OLD.margin_percent;
+    NEW.addons := OLD.addons;
+    NEW.created_at := OLD.created_at;
+    NEW.approved_at := OLD.approved_at;
+    NEW.approved_by := OLD.approved_by;
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists protect_customer_quote_update on public.quotes;
+create trigger protect_customer_quote_update before update on public.quotes for each row
+execute function public.protect_customer_quote_update();

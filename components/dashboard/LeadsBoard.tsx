@@ -5,9 +5,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { BeforeAfterUploader } from "@/components/dashboard/BeforeAfterUploader";
 import { StatusPill } from "@/components/dashboard/StatusPill";
+import { QuoteBuilder, type QuoteRow } from "@/components/dashboard/QuoteBuilder";
+import type { Category, PricingRule, PricingProfile } from "@/lib/quoting/estimate";
 
 type Lead = {
   id: string;
+  customer_id: string | null;
   customer_name: string | null;
   customer_contact: string | null;
   service_type: string | null;
@@ -15,6 +18,12 @@ type Lead = {
   status: string;
   before_photo_url: string | null;
   after_photo_url: string | null;
+  category: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  property_condition: string | null;
+  job_frequency: string | null;
+  job_type: string | null;
   created_at: string;
   customers: { full_name: string; phone: string | null } | null;
 };
@@ -31,10 +40,16 @@ export function LeadsBoard({
   companyId,
   leads: initialLeads,
   reviews: initialReviews,
+  pricingRules,
+  pricingProfile,
+  quotesByLead: initialQuotesByLead,
 }: {
   companyId: string;
   leads: Lead[];
   reviews: Review[];
+  pricingRules: Record<Category, PricingRule | null>;
+  pricingProfile: PricingProfile | null;
+  quotesByLead: Record<string, QuoteRow>;
 }) {
   const [tab, setTab] = useState<"enquiries" | "reviews">("enquiries");
   const [leads, setLeads] = useState(initialLeads);
@@ -42,6 +57,8 @@ export function LeadsBoard({
   const [toast, setToast] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [photosOpen, setPhotosOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [quotesByLead, setQuotesByLead] = useState(initialQuotesByLead);
 
   useEffect(() => {
     const supabase = createClient();
@@ -127,6 +144,11 @@ export function LeadsBoard({
   function openLead(id: string) {
     setSelectedId(id);
     setPhotosOpen(false);
+    setQuoteOpen(false);
+  }
+
+  function handleQuoteSent(leadId: string, quote: QuoteRow) {
+    setQuotesByLead((prev) => ({ ...prev, [leadId]: quote }));
   }
 
   const selectedLead = leads.find((l) => l.id === selectedId) ?? null;
@@ -331,6 +353,53 @@ export function LeadsBoard({
                     Mark complete
                   </button>
                 )}
+              </div>
+
+              <div className="mt-6 border-t border-ink-900/10 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setQuoteOpen((v) => !v)}
+                  className="flex w-full items-center justify-between text-left"
+                >
+                  <span className="text-sm font-medium text-ink-900">
+                    AI-assisted quote
+                  </span>
+                  <span
+                    className={`text-ink-700/50 transition-transform ${
+                      quoteOpen ? "rotate-180" : ""
+                    }`}
+                  >
+                    ⌄
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {quoteOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-4">
+                        <QuoteBuilder
+                          companyId={companyId}
+                          lead={selectedLead}
+                          pricingRule={
+                            selectedLead.category
+                              ? pricingRules[selectedLead.category as Category]
+                              : null
+                          }
+                          pricingProfile={pricingProfile}
+                          existingQuote={quotesByLead[selectedLead.id] ?? null}
+                          onSent={(quote) =>
+                            handleQuoteSent(selectedLead.id, quote)
+                          }
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="mt-6 border-t border-ink-900/10 pt-5">

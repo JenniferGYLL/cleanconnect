@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ReviewForm } from "@/components/dashboard/ReviewForm";
+import { CustomerQuoteCard, type CustomerQuote } from "@/components/dashboard/CustomerQuoteCard";
 
 export type Booking = {
   id: string;
@@ -14,6 +15,7 @@ export type Booking = {
   after_photo_url: string | null;
   created_at: string;
   companies: { company_name: string } | null;
+  quote: CustomerQuote | null;
 };
 
 export default function CustomerBookingsList({
@@ -43,12 +45,47 @@ export default function CustomerBookingsList({
           filter: `customer_id=eq.${customerId}`,
         },
         (payload) => {
-          const updated = payload.new as Omit<Booking, "companies">;
+          const updated = payload.new as Omit<Booking, "companies" | "quote">;
           setBookings((prev) =>
             prev.map((booking) =>
               booking.id === updated.id
                 ? { ...booking, ...updated }
                 : booking
+            )
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "quotes",
+          filter: `customer_id=eq.${customerId}`,
+        },
+        (payload) => {
+          const quote = payload.new as CustomerQuote & { lead_id: string };
+          if (quote.status === "draft") return;
+          setBookings((prev) =>
+            prev.map((booking) =>
+              booking.id === quote.lead_id ? { ...booking, quote } : booking
+            )
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "quotes",
+          filter: `customer_id=eq.${customerId}`,
+        },
+        (payload) => {
+          const quote = payload.new as CustomerQuote & { lead_id: string };
+          setBookings((prev) =>
+            prev.map((booking) =>
+              booking.id === quote.lead_id ? { ...booking, quote } : booking
             )
           );
         }
@@ -65,6 +102,16 @@ export default function CustomerBookingsList({
       <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
         No bookings yet — browse companies to request one.
       </div>
+    );
+  }
+
+  function handleQuoteAccepted(quoteId: string) {
+    setBookings((prev) =>
+      prev.map((booking) =>
+        booking.quote && booking.quote.id === quoteId
+          ? { ...booking, quote: { ...booking.quote, status: "accepted" } }
+          : booking
+      )
     );
   }
 
@@ -95,6 +142,12 @@ export default function CustomerBookingsList({
             <p className="mt-1 text-sm text-slate-500">
               Service: {booking.service_type}
             </p>
+          )}
+          {booking.quote && (
+            <CustomerQuoteCard
+              quote={booking.quote}
+              onAccepted={handleQuoteAccepted}
+            />
           )}
           {(booking.before_photo_url || booking.after_photo_url) && (
             <div className="mt-3 grid grid-cols-2 gap-3">

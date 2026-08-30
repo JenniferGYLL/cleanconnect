@@ -5,6 +5,15 @@ import CustomerBookingsList from "@/components/dashboard/CustomerBookingsList";
 import LogoutButton from "@/app/dashboard/LogoutButton";
 import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
 
+type BookingQuote = {
+  id: string;
+  lead_id: string;
+  final_price: number | null;
+  status: string;
+  addons: { label: string; amount: number }[] | null;
+  created_at: string;
+};
+
 export default async function MyBookingsPage() {
   const supabase = createClient();
 
@@ -37,13 +46,28 @@ export default async function MyBookingsPage() {
     .select("lead_id")
     .eq("customer_id", user.id);
 
+  const { data: quotes } = await supabase
+    .from("quotes")
+    .select("id, lead_id, final_price, status, addons, created_at")
+    .eq("customer_id", user.id)
+    .order("created_at", { ascending: false });
+
   const reviewedLeadIds = new Set(
     (existingReviews ?? []).map((review) => review.lead_id)
   );
 
+  // Only the most recent (non-draft) quote per booking is shown.
+  const quoteByLeadId = new Map<string, BookingQuote>();
+  for (const quote of (quotes ?? []) as BookingQuote[]) {
+    if (!quoteByLeadId.has(quote.lead_id)) {
+      quoteByLeadId.set(quote.lead_id, quote);
+    }
+  }
+
   const bookingsWithReviewFlag = (bookings ?? []).map((booking) => ({
     ...booking,
     hasReview: reviewedLeadIds.has(booking.id),
+    quote: quoteByLeadId.get(booking.id) ?? null,
   }));
 
   return (
