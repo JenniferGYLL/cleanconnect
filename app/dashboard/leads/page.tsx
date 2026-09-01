@@ -3,7 +3,7 @@ import { requireCompany } from "@/lib/dashboard/requireCompany";
 import { CompanyNav } from "@/components/dashboard/CompanyNav";
 import { LeadsBoard } from "@/components/dashboard/LeadsBoard";
 import { FadeIn } from "@/components/motion/FadeIn";
-import type { Category, PricingRule, PricingProfile } from "@/lib/quoting/estimate";
+import type { PricingProfile } from "@/lib/quoting/estimate";
 import type { QuoteRow } from "@/components/dashboard/QuoteBuilder";
 
 type QuoteWithLead = QuoteRow & { lead_id: string };
@@ -18,7 +18,6 @@ export default async function LeadsPage() {
   const [
     { data: leads },
     { data: reviews },
-    { data: ruleRows },
     { data: profileRow },
     { data: quoteRows },
   ] = await Promise.all([
@@ -33,10 +32,6 @@ export default async function LeadsPage() {
       .eq("company_id", user.id)
       .order("created_at", { ascending: false }),
     supabase
-      .from("pricing_rules")
-      .select("category, base_rate, size_multiplier, frequency_discount_percent")
-      .eq("company_id", user.id),
-    supabase
       .from("company_pricing_profiles")
       .select("*")
       .eq("company_id", user.id)
@@ -50,34 +45,19 @@ export default async function LeadsPage() {
       .order("created_at", { ascending: false }),
   ]);
 
-  const pricingRules: Record<Category, PricingRule | null> = {
-    residential: null,
-    commercial: null,
-    garden: null,
-  };
-  for (const row of ruleRows ?? []) {
-    const category = row.category as Category;
-    if (category in pricingRules) {
-      pricingRules[category] = {
-        base_rate: Number(row.base_rate),
-        size_multiplier: Number(row.size_multiplier),
-        frequency_discount_percent: Number(row.frequency_discount_percent),
-      };
-    }
-  }
-
   const pricingProfile: PricingProfile | null = profileRow
     ? {
+        pricing_model: (profileRow.pricing_model as "hourly" | "per_job") ?? "hourly",
+        hourly_rate: Number(profileRow.hourly_rate),
+        flat_job_rate: Number(profileRow.flat_job_rate),
         min_job_charge: Number(profileRow.min_job_charge),
-        min_cleaners: Number(profileRow.min_cleaners),
-        labour_cost_per_hour: Number(profileRow.labour_cost_per_hour),
-        margin_target_percent: Number(profileRow.margin_target_percent),
         gst_included: Boolean(profileRow.gst_included),
         travel_fee: Number(profileRow.travel_fee),
         addon_oven: Number(profileRow.addon_oven),
         addon_fridge: Number(profileRow.addon_fridge),
         addon_windows: Number(profileRow.addon_windows),
         addon_carpet: Number(profileRow.addon_carpet),
+        addon_high_access: Number(profileRow.addon_high_access),
         addon_other_label: profileRow.addon_other_label ?? null,
         addon_other_price: Number(profileRow.addon_other_price),
       }
@@ -119,7 +99,6 @@ export default async function LeadsPage() {
               companyId={user.id}
               leads={leads ?? []}
               reviews={reviews ?? []}
-              pricingRules={pricingRules}
               pricingProfile={pricingProfile}
               quotesByLead={quotesByLead}
             />

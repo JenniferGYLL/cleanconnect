@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { BeforeAfterUploader } from "@/components/dashboard/BeforeAfterUploader";
 import { StatusPill } from "@/components/dashboard/StatusPill";
 import { QuoteBuilder, type QuoteRow } from "@/components/dashboard/QuoteBuilder";
-import type { Category, PricingRule, PricingProfile } from "@/lib/quoting/estimate";
+import type { PricingProfile } from "@/lib/quoting/estimate";
 
 type Lead = {
   id: string;
@@ -24,6 +24,8 @@ type Lead = {
   property_condition: string | null;
   job_frequency: string | null;
   job_type: string | null;
+  info_requested_note: string | null;
+  info_requested_at: string | null;
   created_at: string;
   customers: { full_name: string; phone: string | null } | null;
 };
@@ -40,14 +42,12 @@ export function LeadsBoard({
   companyId,
   leads: initialLeads,
   reviews: initialReviews,
-  pricingRules,
   pricingProfile,
   quotesByLead: initialQuotesByLead,
 }: {
   companyId: string;
   leads: Lead[];
   reviews: Review[];
-  pricingRules: Record<Category, PricingRule | null>;
   pricingProfile: PricingProfile | null;
   quotesByLead: Record<string, QuoteRow>;
 }) {
@@ -149,6 +149,20 @@ export function LeadsBoard({
 
   function handleQuoteSent(leadId: string, quote: QuoteRow) {
     setQuotesByLead((prev) => ({ ...prev, [leadId]: quote }));
+  }
+
+  function handleInfoRequested(leadId: string, note: string) {
+    setLeads((prev) =>
+      prev.map((lead) =>
+        lead.id === leadId
+          ? {
+              ...lead,
+              info_requested_note: note,
+              info_requested_at: new Date().toISOString(),
+            }
+          : lead
+      )
+    );
   }
 
   const selectedLead = leads.find((l) => l.id === selectedId) ?? null;
@@ -385,16 +399,12 @@ export function LeadsBoard({
                         <QuoteBuilder
                           companyId={companyId}
                           lead={selectedLead}
-                          pricingRule={
-                            selectedLead.category
-                              ? pricingRules[selectedLead.category as Category]
-                              : null
-                          }
                           pricingProfile={pricingProfile}
                           existingQuote={quotesByLead[selectedLead.id] ?? null}
                           onSent={(quote) =>
                             handleQuoteSent(selectedLead.id, quote)
                           }
+                          onInfoRequested={handleInfoRequested}
                         />
                       </div>
                     </motion.div>

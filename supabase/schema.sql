@@ -481,3 +481,41 @@ $$;
 drop trigger if exists protect_customer_quote_update on public.quotes;
 create trigger protect_customer_quote_update before update on public.quotes for each row
 execute function public.protect_customer_quote_update();
+
+-- 16. 简化定价设置 —— 公司只提供普通商业事实(怎么收费/最低收费/附加服务价格),
+--     不再要求公司理解 base rate / size multiplier / margin 这些定价模型概念。
+--     这些"隐藏默认值"由 estimateQuote() 内部处理,公司完全看不到也不用配置。
+
+alter table public.company_pricing_profiles
+add column if not exists pricing_model text not null default 'hourly';
+
+alter table public.company_pricing_profiles
+add column if not exists hourly_rate numeric not null default 0;
+
+alter table public.company_pricing_profiles
+add column if not exists flat_job_rate numeric not null default 0;
+
+alter table public.company_pricing_profiles
+add column if not exists addon_high_access numeric not null default 0;
+
+-- 这几个字段是旧版"自己配置定价模型"留下的,公司从未真正理解过,
+-- 现在的估价逻辑也不再读取它们了 —— 直接去掉。
+alter table public.company_pricing_profiles
+drop column if exists labour_cost_per_hour;
+
+alter table public.company_pricing_profiles
+drop column if exists margin_target_percent;
+
+alter table public.company_pricing_profiles
+drop column if exists min_cleaners;
+
+-- 公司手动改价格时,可以选填"为什么改"——留痕,以后校准要用
+alter table public.quotes
+add column if not exists price_adjustment_reason text;
+
+-- 公司在AI报价页可以直接问客户要更多信息,而不用先建一个完整的消息系统
+alter table public.leads
+add column if not exists info_requested_note text;
+
+alter table public.leads
+add column if not exists info_requested_at timestamptz;

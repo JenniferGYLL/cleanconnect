@@ -4,15 +4,12 @@ import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   estimateQuote,
-  type Category,
   type Condition,
   type JobType,
   type Frequency,
-  type PricingRule,
   type PricingProfile,
+  type AddonKey,
 } from "@/lib/quoting/estimate";
-
-type AddonKey = "oven" | "fridge" | "windows" | "carpet" | "other";
 
 export type QuoteRow = {
   id: string;
@@ -28,12 +25,13 @@ export type QuoteRow = {
 type LeadForQuote = {
   id: string;
   customer_id: string | null;
-  category: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
   property_condition: string | null;
   job_frequency: string | null;
   job_type: string | null;
+  info_requested_note: string | null;
+  info_requested_at: string | null;
 };
 
 const ADDON_OPTIONS: {
@@ -50,6 +48,11 @@ const ADDON_OPTIONS: {
   },
   { key: "carpet", label: () => "Carpet clean", price: (p) => p.addon_carpet },
   {
+    key: "high_access",
+    label: () => "High-access cleaning",
+    price: (p) => p.addon_high_access,
+  },
+  {
     key: "other",
     label: (p) => p.addon_other_label || "Other",
     price: (p) => p.addon_other_price,
@@ -59,37 +62,41 @@ const ADDON_OPTIONS: {
 export function QuoteBuilder({
   companyId,
   lead,
-  pricingRule,
   pricingProfile,
   existingQuote,
   onSent,
+  onInfoRequested,
 }: {
   companyId: string;
   lead: LeadForQuote;
-  pricingRule: PricingRule | null;
   pricingProfile: PricingProfile | null;
   existingQuote: QuoteRow | null;
   onSent: (quote: QuoteRow) => void;
+  onInfoRequested: (leadId: string, note: string) => void;
 }) {
   const [addons, setAddons] = useState<Set<AddonKey>>(new Set());
   const [editing, setEditing] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
   const [overrides, setOverrides] = useState<{
     price?: number;
     hours?: number;
     cleaners?: number;
   }>({});
+  const [adjustmentReason, setAdjustmentReason] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sentQuote, setSentQuote] = useState<QuoteRow | null>(existingQuote);
 
-  const rule = pricingRule;
+  const [askingInfo, setAskingInfo] = useState(false);
+  const [infoNote, setInfoNote] = useState("");
+  const [sendingInfo, setSendingInfo] = useState(false);
+
   const profile = pricingProfile;
 
   const estimate = useMemo(() => {
-    if (!rule || !profile || !lead.category) return null;
+    if (!profile) return null;
     return estimateQuote(
       {
-        category: lead.category as Category,
         bedrooms: lead.bedrooms,
         bathrooms: lead.bathrooms,
         condition: (lead.property_condition as Condition) ?? null,
@@ -97,10 +104,31 @@ export function QuoteBuilder({
         frequency: (lead.job_frequency as Frequency) ?? "one_off",
         addons: Array.from(addons),
       },
-      rule,
       profile
     );
-  }, [rule, profile, lead, addons]);
+  }, [profile, lead, addons]);
+
+  async function sendInfoRequest() {
+    if (!infoNote.trim()) return;
+    setSendingInfo(true);
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("leads")
+      .update({
+        info_requested_note: infoNote.trim(),
+        info_requested_at: new Date().toISOString(),
+      })
+      .eq("id", lead.id);
+
+    setSendingInfo(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    onInfoRequested(lead.id, infoNote.trim());
+    setAskingInfo(false);
+    setInfoNote("");
+  }
 
   if (sentQuote && sentQuote.status !== "draft") {
     return (
@@ -116,24 +144,15 @@ export function QuoteBuilder({
     );
   }
 
-  if (!lead.category) {
-    return (
-      <p className="rounded-xl border border-dashed border-ink-900/10 bg-white/40 p-4 text-xs text-ink-700/60">
-        This enquiry came in before structured job details existed, so
-        there isn&apos;t enough information for an AI estimate. Ask the
-        customer for property size and condition, or agree a price directly.
-      </p>
-    );
-  }
-
-  if (!rule || !profile || !estimate) {
+  if (!profile || !estimate) {
     return (
       <p className="rounded-xl border border-dashed border-ink-900/10 bg-white/40 p-4 text-xs text-ink-700/60">
         Set up your{" "}
         <a href="/dashboard/pricing" className="underline">
-          pricing and AI quote settings
+          pricing
         </a>{" "}
-        first — the AI needs your rates to suggest a price.
+        first — just how you charge, your minimum job price, and any add-on
+        prices. The AI takes it from there.
       </p>
     );
   }
@@ -141,6 +160,7 @@ export function QuoteBuilder({
   const price = overrides.price ?? estimate.priceMid;
   const hours = overrides.hours ?? estimate.hoursMid;
   const cleaners = overrides.cleaners ?? estimate.cleaners;
+  const belowEstimatedRange = price < estimate.priceMin;
 
   function toggleAddon(key: AddonKey) {
     setAddons((prev) => {
@@ -175,7 +195,7 @@ export function QuoteBuilder({
         final_cleaners: cleaners,
         final_hours: hours,
         final_price: price,
-        margin_percent: estimate!.marginPercent,
+        price_adjustment_reason: adjustmentReason.trim() || null,
         addons: addonLines,
         status: "sent",
         approved_at: new Date().toISOString(),
@@ -198,27 +218,11 @@ export function QuoteBuilder({
 
   return (
     <div className="space-y-4 rounded-2xl border border-ink-900/10 bg-white/60 p-4">
-      <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-widest text-gold-500">
-          AI estimate
-        </h4>
-        <ConfidenceBadge confidence={estimate.confidence} />
-      </div>
-      <p className="-mt-2 text-xs text-ink-700/60">
-        {estimate.confidenceReason}
-      </p>
-
-      <div className="flex flex-wrap gap-4 text-sm text-ink-800">
-        <Stat label="Cleaners" value={String(estimate.cleaners)} />
-        <Stat
-          label="Hours"
-          value={`${estimate.hoursMin}–${estimate.hoursMax}`}
-        />
-        <Stat
-          label="Per cleaner"
-          value={`${estimate.perCleanerHoursMin}–${estimate.perCleanerHoursMax} hrs`}
-        />
-      </div>
+      {lead.info_requested_note && (
+        <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          You asked the customer: &ldquo;{lead.info_requested_note}&rdquo;
+        </div>
+      )}
 
       <div>
         <p className="text-xs font-medium text-ink-700/70">
@@ -251,7 +255,22 @@ export function QuoteBuilder({
       </div>
 
       <div className="rounded-xl bg-ink-950/[0.03] p-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-ink-700/50">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-700/50">
+            AI estimate
+          </p>
+          <ConfidenceBadge confidence={estimate.confidence} />
+        </div>
+
+        <div className="mt-2 flex flex-wrap gap-4 text-sm text-ink-800">
+          <Stat label="Cleaners" value={String(estimate.cleaners)} />
+          <Stat
+            label="Hours"
+            value={`${estimate.hoursMin}–${estimate.hoursMax}`}
+          />
+        </div>
+
+        <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-ink-700/50">
           Recommended price
         </p>
 
@@ -308,35 +327,45 @@ export function QuoteBuilder({
           </p>
         )}
 
-        <p className="mt-1 text-xs text-ink-700/50">
-          AI range ${estimate.priceMin}–${estimate.priceMax}
-        </p>
-
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-ink-700/70">
-          <div>Labour cost: ${estimate.labourCostEstimate}</div>
-          <div>Other costs: ${estimate.otherCostEstimate}</div>
-          <div>Est. profit: ${estimate.profitEstimate}</div>
-          <div>Margin: {estimate.marginPercent}%</div>
-        </div>
-
-        {estimate.belowMarginTarget && (
+        {belowEstimatedRange && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            This is below your {profile.margin_target_percent}% target
-            margin — you can still send it if that&apos;s the right call for
-            this job.
+            This is lower than we&apos;d usually expect for a job like this —
+            worth double-checking before you send it. You can still send it
+            if that&apos;s the right call.
           </p>
         )}
-      </div>
 
-      <div>
-        <p className="text-xs font-medium text-ink-700/70">
-          Why this price?
-        </p>
-        <ul className="mt-1 space-y-0.5 text-xs text-ink-700/70">
-          {estimate.reasons.map((r, i) => (
-            <li key={i}>· {r}</li>
-          ))}
-        </ul>
+        {editing && (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-xs font-medium text-ink-700/70">
+              Why did you change the price? (optional)
+            </span>
+            <input
+              value={adjustmentReason}
+              onChange={(e) => setAdjustmentReason(e.target.value)}
+              placeholder="e.g. regular customer discount"
+              className="input text-sm"
+            />
+          </label>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setWhyOpen((v) => !v)}
+          className="mt-3 text-xs font-medium text-brand-700 underline underline-offset-2"
+        >
+          {whyOpen ? "Hide" : "Why this price?"}
+        </button>
+        {whyOpen && (
+          <div className="mt-2 rounded-lg bg-white/70 p-3 text-xs text-ink-700/80">
+            <p>{estimate.summary}</p>
+            <ul className="mt-2 space-y-0.5">
+              {estimate.reasons.map((r, i) => (
+                <li key={i}>· {r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -345,23 +374,64 @@ export function QuoteBuilder({
         </p>
       )}
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setEditing((v) => !v)}
-          className="btn-ghost flex-1 py-2 text-xs"
-        >
-          {editing ? "Done editing" : "Edit quote"}
-        </button>
-        <button
-          type="button"
-          onClick={approveAndSend}
-          disabled={sending}
-          className="btn-primary flex-1 py-2 text-xs disabled:opacity-60"
-        >
-          {sending ? "Sending…" : "Approve & send"}
-        </button>
-      </div>
+      {askingInfo ? (
+        <div className="rounded-xl border border-ink-900/10 bg-white/70 p-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-ink-700/70">
+              What do you need from the customer?
+            </span>
+            <textarea
+              value={infoNote}
+              onChange={(e) => setInfoNote(e.target.value)}
+              rows={2}
+              className="input text-sm"
+              placeholder="e.g. could you confirm how many bathrooms?"
+            />
+          </label>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAskingInfo(false)}
+              className="btn-ghost flex-1 py-1.5 text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={sendInfoRequest}
+              disabled={sendingInfo || !infoNote.trim()}
+              className="btn-primary flex-1 py-1.5 text-xs disabled:opacity-60"
+            >
+              {sendingInfo ? "Sending…" : "Send request"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            className="btn-ghost flex-1 py-2 text-xs"
+          >
+            {editing ? "Done editing" : "Edit quote"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAskingInfo(true)}
+            className="btn-ghost flex-1 py-2 text-xs"
+          >
+            Ask for more info
+          </button>
+          <button
+            type="button"
+            onClick={approveAndSend}
+            disabled={sending}
+            className="btn-primary flex-1 basis-full py-2 text-xs disabled:opacity-60 sm:basis-auto"
+          >
+            {sending ? "Sending…" : "Approve & send"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

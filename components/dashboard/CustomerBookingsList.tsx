@@ -13,6 +13,7 @@ export type Booking = {
   status: string;
   before_photo_url: string | null;
   after_photo_url: string | null;
+  info_requested_note: string | null;
   created_at: string;
   companies: { company_name: string } | null;
   quote: CustomerQuote | null;
@@ -141,6 +142,11 @@ export default function CustomerBookingsList({
           {booking.service_type && (
             <p className="mt-1 text-sm text-slate-500">
               Service: {booking.service_type}
+            </p>
+          )}
+          {booking.info_requested_note && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              The company asked: &ldquo;{booking.info_requested_note}&rdquo;
             </p>
           )}
           {booking.quote && (
