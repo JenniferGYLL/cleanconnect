@@ -17,6 +17,7 @@ export type Booking = {
   created_at: string;
   companies: { company_name: string } | null;
   quote: CustomerQuote | null;
+  inspectionPending: boolean;
 };
 
 export default function CustomerBookingsList({
@@ -149,9 +150,16 @@ export default function CustomerBookingsList({
               The company asked: &ldquo;{booking.info_requested_note}&rdquo;
             </p>
           )}
+          {booking.inspectionPending && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              The company would like to inspect the property before
+              finalizing your quote.
+            </p>
+          )}
           {booking.quote && (
             <CustomerQuoteCard
               quote={booking.quote}
+              customerId={customerId}
               onAccepted={handleQuoteAccepted}
             />
           )}

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { BeforeAfterUploader } from "@/components/dashboard/BeforeAfterUploader";
 import { StatusPill } from "@/components/dashboard/StatusPill";
 import { QuoteBuilder, type QuoteRow } from "@/components/dashboard/QuoteBuilder";
+import type { InspectionRow } from "@/components/dashboard/InspectionPanel";
 import type { PricingProfile } from "@/lib/quoting/estimate";
 
 type Lead = {
@@ -24,6 +25,7 @@ type Lead = {
   property_condition: string | null;
   job_frequency: string | null;
   job_type: string | null;
+  request_photos: string[] | null;
   info_requested_note: string | null;
   info_requested_at: string | null;
   created_at: string;
@@ -44,12 +46,14 @@ export function LeadsBoard({
   reviews: initialReviews,
   pricingProfile,
   quotesByLead: initialQuotesByLead,
+  inspectionsByLead: initialInspectionsByLead,
 }: {
   companyId: string;
   leads: Lead[];
   reviews: Review[];
   pricingProfile: PricingProfile | null;
   quotesByLead: Record<string, QuoteRow>;
+  inspectionsByLead: Record<string, InspectionRow>;
 }) {
   const [tab, setTab] = useState<"enquiries" | "reviews">("enquiries");
   const [leads, setLeads] = useState(initialLeads);
@@ -59,6 +63,13 @@ export function LeadsBoard({
   const [photosOpen, setPhotosOpen] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quotesByLead, setQuotesByLead] = useState(initialQuotesByLead);
+  const [inspectionsByLead, setInspectionsByLead] = useState(
+    initialInspectionsByLead
+  );
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [actualHours, setActualHours] = useState("");
+  const [actualCleaners, setActualCleaners] = useState("");
+  const [savingCompletion, setSavingCompletion] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -149,6 +160,50 @@ export function LeadsBoard({
 
   function handleQuoteSent(leadId: string, quote: QuoteRow) {
     setQuotesByLead((prev) => ({ ...prev, [leadId]: quote }));
+  }
+
+  function handleInspectionChange(leadId: string, inspection: InspectionRow) {
+    setInspectionsByLead((prev) => ({ ...prev, [leadId]: inspection }));
+  }
+
+  async function submitCompletion(leadId: string) {
+    setSavingCompletion(true);
+    const supabase = createClient();
+
+    const quote = quotesByLead[leadId] ?? null;
+    const hours = actualHours === "" ? null : Number(actualHours);
+    const cleaners = actualCleaners === "" ? null : Number(actualCleaners);
+
+    const { error: outcomeError } = await supabase.from("job_outcomes").insert({
+      lead_id: leadId,
+      quote_id: quote?.id ?? null,
+      company_id: companyId,
+      actual_hours: hours,
+      actual_cleaners: cleaners,
+    });
+
+    if (outcomeError) {
+      setSavingCompletion(false);
+      setToast(`Couldn't save job outcome: ${outcomeError.message}`);
+      return;
+    }
+
+    if (quote) {
+      await supabase.from("quote_events").insert({
+        lead_id: leadId,
+        quote_id: quote.id,
+        event_type: "job_completed",
+        actor_role: "company",
+        actor_id: companyId,
+        payload: { actual_hours: hours, actual_cleaners: cleaners },
+      });
+    }
+
+    await handleStatusChange(leadId, "completed");
+    setSavingCompletion(false);
+    setCompletingId(null);
+    setActualHours("");
+    setActualCleaners("");
   }
 
   function handleInfoRequested(leadId: string, note: string) {
@@ -357,17 +412,67 @@ export function LeadsBoard({
                     Start job
                   </button>
                 )}
-                {selectedLead.status === "in_progress" && (
-                  <button
-                    onClick={() =>
-                      handleStatusChange(selectedLead.id, "completed")
-                    }
-                    className="rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
-                  >
-                    Mark complete
-                  </button>
-                )}
+                {selectedLead.status === "in_progress" &&
+                  completingId !== selectedLead.id && (
+                    <button
+                      onClick={() => setCompletingId(selectedLead.id)}
+                      className="rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                    >
+                      Mark complete
+                    </button>
+                  )}
               </div>
+
+              {completingId === selectedLead.id && (
+                <div className="mt-3 rounded-xl border border-ink-900/10 bg-white/60 p-3">
+                  <p className="text-xs font-medium text-ink-700/70">
+                    Quick record for your own numbers (optional) — helps
+                    future estimates get more accurate.
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <label className="block">
+                      <span className="mb-1 block text-[10px] text-ink-700/50">
+                        Actual hours
+                      </span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={actualHours}
+                        onChange={(e) => setActualHours(e.target.value)}
+                        className="input text-sm"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-[10px] text-ink-700/50">
+                        Cleaners used
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={actualCleaners}
+                        onChange={(e) => setActualCleaners(e.target.value)}
+                        className="input text-sm"
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => setCompletingId(null)}
+                      className="rounded-full border border-ink-900/15 px-4 py-1.5 text-xs font-medium text-ink-700 hover:border-ink-900/30"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => submitCompletion(selectedLead.id)}
+                      disabled={savingCompletion}
+                      className="rounded-full bg-brand-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                    >
+                      {savingCompletion ? "Saving…" : "Confirm complete"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-6 border-t border-ink-900/10 pt-5">
                 <button
@@ -401,10 +506,14 @@ export function LeadsBoard({
                           lead={selectedLead}
                           pricingProfile={pricingProfile}
                           existingQuote={quotesByLead[selectedLead.id] ?? null}
+                          existingInspection={
+                            inspectionsByLead[selectedLead.id] ?? null
+                          }
                           onSent={(quote) =>
                             handleQuoteSent(selectedLead.id, quote)
                           }
                           onInfoRequested={handleInfoRequested}
+                          onInspectionChange={handleInspectionChange}
                         />
                       </div>
                     </motion.div>

@@ -5,6 +5,7 @@ import { LeadsBoard } from "@/components/dashboard/LeadsBoard";
 import { FadeIn } from "@/components/motion/FadeIn";
 import type { PricingProfile } from "@/lib/quoting/estimate";
 import type { QuoteRow } from "@/components/dashboard/QuoteBuilder";
+import type { InspectionRow } from "@/components/dashboard/InspectionPanel";
 
 type QuoteWithLead = QuoteRow & { lead_id: string };
 
@@ -20,6 +21,7 @@ export default async function LeadsPage() {
     { data: reviews },
     { data: profileRow },
     { data: quoteRows },
+    { data: inspectionRows },
   ] = await Promise.all([
     supabase
       .from("leads")
@@ -39,10 +41,15 @@ export default async function LeadsPage() {
     supabase
       .from("quotes")
       .select(
-        "id, lead_id, final_price, final_hours, final_cleaners, confidence, status, addons, created_at"
+        "id, lead_id, final_price, final_hours, final_cleaners, confidence, status, addons, risk_level, quote_mode, additional_charge, additional_charge_reason, created_at"
       )
       .eq("company_id", user.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("inspections")
+      .select("id, lead_id, quote_id, requested_at, findings, completed_at")
+      .eq("company_id", user.id)
+      .order("requested_at", { ascending: false }),
   ]);
 
   const pricingProfile: PricingProfile | null = profileRow
@@ -68,6 +75,14 @@ export default async function LeadsPage() {
   for (const quote of (quoteRows ?? []) as QuoteWithLead[]) {
     if (!quotesByLead[quote.lead_id]) {
       quotesByLead[quote.lead_id] = quote;
+    }
+  }
+
+  // Keep only the most recent inspection per lead (rows already newest-first).
+  const inspectionsByLead: Record<string, InspectionRow> = {};
+  for (const inspection of (inspectionRows ?? []) as InspectionRow[]) {
+    if (!inspectionsByLead[inspection.lead_id]) {
+      inspectionsByLead[inspection.lead_id] = inspection;
     }
   }
 
@@ -101,6 +116,7 @@ export default async function LeadsPage() {
               reviews={reviews ?? []}
               pricingProfile={pricingProfile}
               quotesByLead={quotesByLead}
+              inspectionsByLead={inspectionsByLead}
             />
           </FadeIn>
         </div>

@@ -39,6 +39,8 @@ const JOB_TYPE_LABEL: Record<JobType, string> = {
   end_of_lease: "End-of-lease clean",
 };
 
+const MAX_PHOTOS = 6;
+
 export function BookingForm({
   companyId,
   customerId,
@@ -54,9 +56,30 @@ export function BookingForm({
   const [frequency, setFrequency] = useState<Frequency>("one_off");
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  function handlePhotoSelect(files: FileList | null) {
+    if (!files) return;
+    const incoming = Array.from(files).slice(0, MAX_PHOTOS - photos.length);
+    if (incoming.length === 0) return;
+    setPhotos((prev) => [...prev, ...incoming].slice(0, MAX_PHOTOS));
+    setPhotoPreviews((prev) =>
+      [...prev, ...incoming.map((f) => URL.createObjectURL(f))].slice(
+        0,
+        MAX_PHOTOS
+      )
+    );
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
 
   if (!customerId) {
     return (
@@ -90,11 +113,32 @@ export function BookingForm({
     setError(null);
     setLoading(true);
 
+    const supabase = createClient();
+
+    // Photos upload to the customer's own folder first — the lead insert
+    // just stores the resulting public URLs, so a failed upload doesn't
+    // half-write a lead.
+    const photoUrls: string[] = [];
+    for (let i = 0; i < photos.length; i++) {
+      const file = photos[i];
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${customerId}/${Date.now()}-${i}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("lead-photos")
+        .upload(path, file);
+      if (uploadError) {
+        setLoading(false);
+        setError(`Couldn't upload a photo: ${uploadError.message}`);
+        return;
+      }
+      const { data } = supabase.storage.from("lead-photos").getPublicUrl(path);
+      photoUrls.push(data.publicUrl);
+    }
+
     const serviceType = `${CATEGORY_LABEL[category]} · ${JOB_TYPE_LABEL[jobType]}${
       frequency === "recurring" ? " · Recurring" : ""
     }`;
 
-    const supabase = createClient();
     const { error: insertError } = await supabase.from("leads").insert({
       company_id: companyId,
       customer_id: customerId,
@@ -107,6 +151,7 @@ export function BookingForm({
       job_frequency: frequency,
       customer_contact: address,
       message,
+      request_photos: photoUrls,
       status: "requested",
     });
 
@@ -247,6 +292,65 @@ export function BookingForm({
         />
       </label>
 
+      <div className="block">
+        <span className="mb-1 block text-sm font-medium text-slate-700">
+          Photos of the property (optional, up to {MAX_PHOTOS})
+        </span>
+        <p className="mb-2 text-xs text-slate-400">
+          A few photos help the company give you a more accurate quote.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {photoPreviews.map((src, i) => (
+            <div
+              key={i}
+              className="group relative h-16 w-16 overflow-hidden rounded-lg border border-slate-200"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt={`Upload preview ${i + 1}`}
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => removePhoto(i)}
+                aria-label="Remove photo"
+                className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs text-white opacity-0 transition group-hover:opacity-100"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          {photos.length < MAX_PHOTOS && (
+            <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400 hover:border-slate-400 hover:text-slate-600">
+              + Add
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handlePhotoSelect(e.target.files)}
+              />
+            </label>
+          )}
+        </div>
+      </div>
+
+      <label className="flex items-start gap-2 text-xs text-slate-500">
+        <input
+          type="checkbox"
+          required
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          I understand this gives me an estimate, not a final price — the
+          company may follow up or ask to inspect the property before
+          confirming.
+        </span>
+      </label>
+
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
           {error}
@@ -255,8 +359,8 @@ export function BookingForm({
 
       <button
         type="submit"
-        disabled={loading}
-        className="btn-primary w-full py-2.5"
+        disabled={loading || !confirmed}
+        className="btn-primary w-full py-2.5 disabled:opacity-60"
       >
         {loading ? "Sending…" : "Request a booking"}
       </button>

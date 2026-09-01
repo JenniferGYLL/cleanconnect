@@ -11,7 +11,14 @@ type BookingQuote = {
   final_price: number | null;
   status: string;
   addons: { label: string; amount: number }[] | null;
+  additional_charge: number | null;
+  additional_charge_reason: string | null;
   created_at: string;
+};
+
+type InspectionStatus = {
+  lead_id: string;
+  completed_at: string | null;
 };
 
 export default async function MyBookingsPage() {
@@ -48,9 +55,17 @@ export default async function MyBookingsPage() {
 
   const { data: quotes } = await supabase
     .from("quotes")
-    .select("id, lead_id, final_price, status, addons, created_at")
+    .select(
+      "id, lead_id, final_price, status, addons, additional_charge, additional_charge_reason, created_at"
+    )
     .eq("customer_id", user.id)
     .order("created_at", { ascending: false });
+
+  const { data: inspections } = await supabase
+    .from("inspections")
+    .select("lead_id, completed_at")
+    .eq("customer_id", user.id)
+    .order("requested_at", { ascending: false });
 
   const reviewedLeadIds = new Set(
     (existingReviews ?? []).map((review) => review.lead_id)
@@ -64,10 +79,20 @@ export default async function MyBookingsPage() {
     }
   }
 
+  // Only the most recent inspection per booking matters for the banner.
+  const inspectionByLeadId = new Map<string, InspectionStatus>();
+  for (const inspection of (inspections ?? []) as InspectionStatus[]) {
+    if (!inspectionByLeadId.has(inspection.lead_id)) {
+      inspectionByLeadId.set(inspection.lead_id, inspection);
+    }
+  }
+
   const bookingsWithReviewFlag = (bookings ?? []).map((booking) => ({
     ...booking,
     hasReview: reviewedLeadIds.has(booking.id),
     quote: quoteByLeadId.get(booking.id) ?? null,
+    inspectionPending:
+      inspectionByLeadId.get(booking.id)?.completed_at === null,
   }));
 
   return (

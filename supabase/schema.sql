@@ -519,3 +519,187 @@ add column if not exists info_requested_note text;
 
 alter table public.leads
 add column if not exists info_requested_at timestamptz;
+
+-- 17. AI报价系统 Phase 1:客户上传照片、风险评级(不看照片内容,只看信息完整度)、
+--     验房流程、报价调整(需要客户重新确认)、完整的审计日志。
+--     明确不做的事(留到以后):真正会"看"照片内容的AI —— 那需要新的API key和
+--     每次报价的真实调用成本,现在先不做。
+
+-- 17a. 客户下单时最多可以上传 6 张照片(和公司上传的完工前后照片是分开的)
+alter table public.leads
+add column if not exists request_photos text[] not null default '{}';
+
+-- 新建一个单独的 Storage 桶给客户上传照片用,和公司的 job-photos 桶分开,
+-- 权限模型完全一样:自己的文件夹自己传,任何人都能查看(报价页要显示)
+insert into
+  storage.buckets (id, name, public)
+values
+  ('lead-photos', 'lead-photos', true) on conflict (id) do nothing;
+
+drop policy if exists "Customers upload own request photos" on storage.objects;
+
+create policy "Customers upload own request photos" on storage.objects for insert
+with
+  check (
+    bucket_id = 'lead-photos'
+    and (storage.foldername (name)) [1] = auth.uid ()::text
+  );
+
+drop policy if exists "Anyone can view lead photos" on storage.objects;
+
+create policy "Anyone can view lead photos" on storage.objects for select using (bucket_id = 'lead-photos');
+
+-- 17b. quotes 表新增:风险等级、报价模式、验房后的追加费用(原报价 + 追加费用 = 最终报价)
+alter table public.quotes
+add column if not exists risk_level text;
+
+alter table public.quotes
+add column if not exists quote_mode text;
+
+alter table public.quotes
+add column if not exists additional_charge numeric;
+
+alter table public.quotes
+add column if not exists additional_charge_reason text;
+
+alter table public.quotes
+add column if not exists final_quote_accepted_at timestamptz;
+
+-- 17c. 验房记录 —— 公司可以在报价前(或报价后)申请验房,填写验房结果
+create table if not exists public.inspections (
+  id uuid primary key default gen_random_uuid (),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  quote_id uuid references public.quotes (id) on delete set null,
+  company_id uuid not null references public.companies (id) on delete cascade,
+  customer_id uuid references public.customers (id) on delete cascade,
+  requested_at timestamptz not null default now(),
+  requested_by uuid,
+  findings text,
+  completed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table public.inspections enable row level security;
+
+drop policy if exists "Companies manage own inspections" on public.inspections;
+
+create policy "Companies manage own inspections" on public.inspections for all using (auth.uid () = company_id)
+with
+  check (auth.uid () = company_id);
+
+drop policy if exists "Customers view own inspections" on public.inspections;
+
+create policy "Customers view own inspections" on public.inspections for select using (auth.uid () = customer_id);
+
+-- 17d. 实际完工数据 —— 公司标记完工时顺手记录实际工时/人数,
+--      现在只收集、不使用,Phase 2 校准的时候才会用到这些真实数据
+create table if not exists public.job_outcomes (
+  id uuid primary key default gen_random_uuid (),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  quote_id uuid references public.quotes (id) on delete set null,
+  company_id uuid not null references public.companies (id) on delete cascade,
+  actual_hours numeric,
+  actual_cleaners int,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.job_outcomes enable row level security;
+
+drop policy if exists "Companies manage own job outcomes" on public.job_outcomes;
+
+create policy "Companies manage own job outcomes" on public.job_outcomes for all using (auth.uid () = company_id)
+with
+  check (auth.uid () = company_id);
+
+-- 17e. 报价审计日志 —— 每一次状态变化都留一条记录(谁、什么时候、做了什么、为什么),
+--      而不是把所有信息都塞进 quotes 表的几个字段里
+create table if not exists public.quote_events (
+  id uuid primary key default gen_random_uuid (),
+  lead_id uuid not null references public.leads (id) on delete cascade,
+  quote_id uuid references public.quotes (id) on delete set null,
+  event_type text not null,
+  actor_role text not null,
+  actor_id uuid,
+  note text,
+  payload jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.quote_events enable row level security;
+
+drop policy if exists "Related parties view quote events" on public.quote_events;
+
+create policy "Related parties view quote events" on public.quote_events for select using (
+  exists (
+    select 1
+    from public.leads l
+    where
+      l.id = quote_events.lead_id
+      and (
+        l.company_id = auth.uid ()
+        or l.customer_id = auth.uid ()
+      )
+  )
+);
+
+drop policy if exists "Related parties log quote events" on public.quote_events;
+
+create policy "Related parties log quote events" on public.quote_events for insert
+with
+  check (
+    actor_id = auth.uid ()
+    and exists (
+      select 1
+      from public.leads l
+      where
+        l.id = quote_events.lead_id
+        and (
+          l.company_id = auth.uid ()
+          or l.customer_id = auth.uid ()
+        )
+    )
+  );
+
+-- 17f. 更新客户确认报价的触发器:现在客户不仅能把 'sent' 变成 'accepted',
+--      验房后追加费用的 'adjusted' 状态也能被客户确认成 'accepted'。
+--      新增的字段(risk_level / quote_mode / additional_charge 等)客户一样改不了,
+--      final_quote_accepted_at 由触发器自己盖时间戳,不用客户端传。
+create or replace function public.protect_customer_quote_update () returns trigger language plpgsql security definer as $$
+begin
+  if auth.uid() = OLD.customer_id and auth.uid() <> OLD.company_id then
+    if OLD.status not in ('sent', 'adjusted') or NEW.status <> 'accepted' then
+      raise exception 'Customers can only accept a quote that has been sent or adjusted';
+    end if;
+    NEW.company_id := OLD.company_id;
+    NEW.lead_id := OLD.lead_id;
+    NEW.customer_id := OLD.customer_id;
+    NEW.ai_hours_min := OLD.ai_hours_min;
+    NEW.ai_hours_max := OLD.ai_hours_max;
+    NEW.ai_price_min := OLD.ai_price_min;
+    NEW.ai_price_max := OLD.ai_price_max;
+    NEW.confidence := OLD.confidence;
+    NEW.confidence_reason := OLD.confidence_reason;
+    NEW.final_cleaners := OLD.final_cleaners;
+    NEW.final_hours := OLD.final_hours;
+    NEW.final_price := OLD.final_price;
+    NEW.margin_percent := OLD.margin_percent;
+    NEW.addons := OLD.addons;
+    NEW.created_at := OLD.created_at;
+    NEW.approved_at := OLD.approved_at;
+    NEW.approved_by := OLD.approved_by;
+    NEW.price_adjustment_reason := OLD.price_adjustment_reason;
+    NEW.risk_level := OLD.risk_level;
+    NEW.quote_mode := OLD.quote_mode;
+    NEW.additional_charge := OLD.additional_charge;
+    NEW.additional_charge_reason := OLD.additional_charge_reason;
+    NEW.final_quote_accepted_at := now();
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists protect_customer_quote_update on public.quotes;
+
+create trigger protect_customer_quote_update before update on public.quotes for each row
+execute function public.protect_customer_quote_update ();
