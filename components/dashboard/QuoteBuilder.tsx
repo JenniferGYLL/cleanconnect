@@ -4,13 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   estimateQuote,
+  isHighScrutiny,
   type Condition,
   type JobType,
   type Frequency,
   type PricingProfile,
   type AddonKey,
+  type QuoteInput,
+  type ServiceDetails,
 } from "@/lib/quoting/estimate";
 import { assessRisk, type RiskLevel, type QuoteMode } from "@/lib/quoting/risk";
+import { type Category, describeAnswers } from "@/lib/quoting/categories";
 import {
   InspectionPanel,
   type InspectionRow,
@@ -37,11 +41,13 @@ type LeadForQuote = {
   id: string;
   customer_id: string | null;
   message: string | null;
+  category: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
   property_condition: string | null;
   job_frequency: string | null;
   job_type: string | null;
+  service_details: Record<string, unknown> | null;
   request_photos: string[] | null;
   info_requested_note: string | null;
   info_requested_at: string | null;
@@ -165,33 +171,45 @@ export function QuoteBuilder({
     };
   }, [lead.id]);
 
+  const category: Category = (lead.category as Category) || "residential";
+  const serviceDetails: ServiceDetails = useMemo(
+    () => (lead.service_details ?? {}) as ServiceDetails,
+    [lead.service_details]
+  );
+
+  const quoteInput: QuoteInput = useMemo(
+    () => ({
+      category,
+      bedrooms: lead.bedrooms,
+      bathrooms: lead.bathrooms,
+      condition: (lead.property_condition as Condition) ?? null,
+      jobType: (lead.job_type as JobType) ?? "standard",
+      frequency: (lead.job_frequency as Frequency) ?? "one_off",
+      addons: Array.from(addons),
+      serviceDetails,
+    }),
+    [category, lead, addons, serviceDetails]
+  );
+
   const estimate = useMemo(() => {
     if (!profile) return null;
-    return estimateQuote(
-      {
-        bedrooms: lead.bedrooms,
-        bathrooms: lead.bathrooms,
-        condition: (lead.property_condition as Condition) ?? null,
-        jobType: (lead.job_type as JobType) ?? "standard",
-        frequency: (lead.job_frequency as Frequency) ?? "one_off",
-        addons: Array.from(addons),
-      },
-      profile
-    );
-  }, [profile, lead, addons]);
+    return estimateQuote(quoteInput, profile);
+  }, [profile, quoteInput]);
+
+  const answerLines = useMemo(
+    () => describeAnswers(category, serviceDetails),
+    [category, serviceDetails]
+  );
 
   const risk = useMemo(
     () =>
       assessRisk({
         photoCount,
         descriptionLength: (lead.message ?? "").trim().length,
-        bedroomsKnown: lead.bedrooms != null,
-        bathroomsKnown: lead.bathrooms != null,
-        conditionKnown: !!lead.property_condition,
-        jobType: (lead.job_type as JobType) ?? "standard",
-        condition: (lead.property_condition as Condition) ?? null,
+        missingFieldCount: estimate?.missingFieldCount ?? 0,
+        highScrutiny: isHighScrutiny(quoteInput),
       }),
-    [photoCount, lead]
+    [photoCount, lead.message, estimate, quoteInput]
   );
 
   async function logEvent(
@@ -381,6 +399,21 @@ export function QuoteBuilder({
       {lead.info_requested_note && (
         <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
           You asked the customer: &ldquo;{lead.info_requested_note}&rdquo;
+        </div>
+      )}
+
+      {answerLines.length > 0 && (
+        <div className="rounded-lg bg-ink-950/[0.03] p-3">
+          <p className="text-xs font-medium text-ink-700/70">
+            Customer&apos;s answers
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs text-ink-700/80">
+            {answerLines.map((line, i) => (
+              <li key={i}>
+                · {line.label}: {line.value}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

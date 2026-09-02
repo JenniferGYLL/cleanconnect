@@ -703,3 +703,16 @@ drop trigger if exists protect_customer_quote_update on public.quotes;
 
 create trigger protect_customer_quote_update before update on public.quotes for each row
 execute function public.protect_customer_quote_update ();
+
+-- =========================================================
+-- 18. Dynamic booking form — flexible per-category answers
+-- =========================================================
+-- One jsonb column holds every category-specific structured answer
+-- (garden services, commercial floor area, window count, carpet
+-- condition, etc.) instead of adding a new fixed column per cleaning
+-- type. Existing columns (bedrooms/bathrooms/property_condition/
+-- job_frequency/job_type) are untouched — residential bookings keep
+-- writing them exactly as before, so nothing about existing bookings
+-- or the existing AI quote formula for residential jobs changes.
+alter table public.leads
+add column if not exists service_details jsonb not null default '{}'::jsonb;

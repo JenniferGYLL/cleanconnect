@@ -25,6 +25,7 @@ type Lead = {
   property_condition: string | null;
   job_frequency: string | null;
   job_type: string | null;
+  service_details: Record<string, unknown> | null;
   request_photos: string[] | null;
   info_requested_note: string | null;
   info_requested_at: string | null;

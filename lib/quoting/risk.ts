@@ -2,14 +2,19 @@
 //
 // This never looks *inside* a photo. It scores how complete and verifiable
 // the customer's request is: how many photos came in, whether a
-// description was given, which structured property details are missing,
-// and whether the job type is inherently higher-scrutiny. That's a real,
-// honest signal — just based on completeness rather than photo content.
-// Real photo-content analysis (what's actually visible in the photos) is a
+// description was given, how many category-specific details are still
+// unconfirmed (that count comes from lib/quoting/estimate.ts, which knows
+// what "complete" means for each category), and whether the job itself is
+// self-reported as inherently higher-scrutiny. That's a real, honest
+// signal — just based on completeness rather than photo content. Real
+// photo-content analysis (what's actually visible in the photos) is a
 // deliberately separate, later phase that needs a vision-capable model and
 // has a real per-call cost — this file must never pretend to do that.
-
-import type { Condition, JobType } from "@/lib/quoting/estimate";
+//
+// This contract is intentionally category-agnostic: it no longer knows
+// what "bedrooms" or "condition" mean. Callers compute missingFieldCount
+// (via estimateQuote) and highScrutiny (via isHighScrutiny) once, from
+// whichever category applies, and hand the two numbers in here.
 
 export type RiskLevel = "low" | "medium" | "high";
 export type QuoteMode = "instant" | "verification" | "inspection";
@@ -17,11 +22,8 @@ export type QuoteMode = "instant" | "verification" | "inspection";
 export type RiskInput = {
   photoCount: number;
   descriptionLength: number;
-  bedroomsKnown: boolean;
-  bathroomsKnown: boolean;
-  conditionKnown: boolean;
-  jobType: JobType;
-  condition: Condition | null;
+  missingFieldCount: number;
+  highScrutiny: boolean;
 };
 
 export type RiskResult = {
@@ -58,28 +60,18 @@ export function assessRisk(input: RiskInput): RiskResult {
     reasons.push("Very short description");
   }
 
-  const missingFieldCount = [
-    input.bedroomsKnown,
-    input.bathroomsKnown,
-    input.conditionKnown,
-  ].filter((known) => !known).length;
-  if (missingFieldCount > 0) {
-    score += missingFieldCount;
+  if (input.missingFieldCount > 0) {
+    score += input.missingFieldCount;
     reasons.push(
-      `${missingFieldCount} property detail${
-        missingFieldCount === 1 ? "" : "s"
+      `${input.missingFieldCount} detail${
+        input.missingFieldCount === 1 ? "" : "s"
       } not confirmed`
     );
   }
 
-  if (input.jobType === "end_of_lease") {
+  if (input.highScrutiny) {
     score += 1;
-    reasons.push("End-of-lease clean — higher scrutiny job type");
-  }
-
-  if (input.condition === "heavy") {
-    score += 1;
-    reasons.push("Heavy condition self-reported");
+    reasons.push("Self-reported details flag this as a higher-scrutiny job");
   }
 
   let level: RiskLevel = "low";
