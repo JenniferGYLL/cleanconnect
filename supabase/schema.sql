@@ -1002,3 +1002,17 @@ for update
         and (storage.foldername (name)) [2] = l.id::text
     )
   );
+
+-- =========================================================
+-- 25. Quality control on before/after photos
+-- =========================================================
+-- Photos upload and store fine today, but nothing checks whether they
+-- actually reflect the job — a company (not the staff member who took
+-- the photos, to avoid self-marking) can now review a completed job's
+-- before/after pair and mark it approved or flag it for a redo, with
+-- an optional note. Purely a manual record for now — no AI photo
+-- analysis exists anywhere in this app, so this isn't pretending to be
+-- automatic; it's a lightweight checklist step a company can act on.
+alter table public.leads add column if not exists photo_qc_status text not null default 'pending' check (photo_qc_status in ('pending', 'approved', 'flagged'));
+alter table public.leads add column if not exists photo_qc_note text;
+alter table public.leads add column if not exists photo_qc_reviewed_at timestamptz;

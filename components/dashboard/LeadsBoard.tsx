@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { BeforeAfterUploader } from "@/components/dashboard/BeforeAfterUploader";
+import {
+  PhotoQualityCheck,
+  type PhotoQcStatus,
+} from "@/components/dashboard/PhotoQualityCheck";
 import { StatusPill } from "@/components/dashboard/StatusPill";
 import { QuoteBuilder, type QuoteRow } from "@/components/dashboard/QuoteBuilder";
 import type { InspectionRow } from "@/components/dashboard/InspectionPanel";
@@ -19,6 +23,8 @@ type Lead = {
   status: string;
   before_photo_url: string | null;
   after_photo_url: string | null;
+  photo_qc_status: PhotoQcStatus;
+  photo_qc_note: string | null;
   category: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
@@ -131,6 +137,20 @@ export function LeadsBoard({
               [slot === "before" ? "before_photo_url" : "after_photo_url"]:
                 url,
             }
+          : lead
+      )
+    );
+  }
+
+  function handlePhotoQcUpdated(
+    leadId: string,
+    status: PhotoQcStatus,
+    note: string | null
+  ) {
+    setLeads((prev) =>
+      prev.map((lead) =>
+        lead.id === leadId
+          ? { ...lead, photo_qc_status: status, photo_qc_note: note }
           : lead
       )
     );
@@ -276,7 +296,15 @@ export function LeadsBoard({
                         {new Date(lead.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2">
+                      {lead.photo_qc_status === "flagged" && (
+                        <span
+                          title="Photos flagged for a redo"
+                          className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                        >
+                          ⚑ Photos
+                        </span>
+                      )}
                       <StatusPill status={lead.status} />
                       <span className="text-ink-700/30">›</span>
                     </div>
@@ -558,6 +586,21 @@ export function LeadsBoard({
                             handlePhotoUploaded(selectedLead.id, slot, url)
                           }
                         />
+                        {selectedLead.before_photo_url &&
+                          selectedLead.after_photo_url && (
+                            <PhotoQualityCheck
+                              leadId={selectedLead.id}
+                              status={selectedLead.photo_qc_status}
+                              note={selectedLead.photo_qc_note}
+                              onUpdated={(status, note) =>
+                                handlePhotoQcUpdated(
+                                  selectedLead.id,
+                                  status,
+                                  note
+                                )
+                              }
+                            />
+                          )}
                       </div>
                     </motion.div>
                   )}
