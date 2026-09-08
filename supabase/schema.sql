@@ -872,3 +872,23 @@ create policy "Staff view assigned jobs" on public.leads
 drop policy if exists "Staff update assigned jobs" on public.leads;
 create policy "Staff update assigned jobs" on public.leads
   for update using (auth.uid () = assigned_staff_id);
+
+-- =========================================================
+-- 22. Recurring cleaning — "due for its next clean" reminders
+-- =========================================================
+-- Tracks which lead a repeat booking was generated from, so a
+-- completed recurring job is only ever offered once as "due for
+-- renewal" — once a follow-up lead points back to it, it drops out of
+-- the reminder list. Nothing here creates a booking by itself; the
+-- company always presses "Create next booking" themselves, so a
+-- customer's recurring arrangement never quietly multiplies without
+-- someone choosing that.
+alter table public.leads add column if not exists recurring_parent_id uuid references public.leads (id) on delete set null;
+
+-- Leads have never been insertable by the company itself before (only
+-- customers, via the booking form) — needed so the dashboard can create
+-- a repeat booking on an existing customer's behalf.
+drop policy if exists "Companies create own leads" on public.leads;
+create policy "Companies create own leads" on public.leads
+for insert
+with check (auth.uid () = company_id);
