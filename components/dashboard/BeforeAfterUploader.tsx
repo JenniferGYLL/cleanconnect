@@ -111,7 +111,7 @@ function PhotoSlot({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="group relative block aspect-video w-full overflow-hidden rounded-lg border border-dashed border-slate-200 bg-slate-50 disabled:opacity-60"
+        className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-dashed border-ink-900/15 bg-ink-900/[0.03] disabled:opacity-60"
       >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -121,11 +121,11 @@ function PhotoSlot({
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-xs text-slate-400 group-hover:text-slate-600">
+          <span className="flex h-full w-full items-center justify-center text-xs text-ink-700/40 group-hover:text-ink-700/70">
             {uploading ? "Uploading…" : `+ Add ${label.toLowerCase()} photo`}
           </span>
         )}
-        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600">
+        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-700/70">
           {label}
         </span>
       </button>

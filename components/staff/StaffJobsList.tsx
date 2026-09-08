@@ -3,21 +3,26 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { StatusPill } from "@/components/dashboard/StatusPill";
+import { BeforeAfterUploader } from "@/components/dashboard/BeforeAfterUploader";
 
 export type StaffJob = {
   id: string;
+  company_id: string;
   customer_name: string | null;
   customer_contact: string | null;
   service_type: string | null;
   message: string | null;
   status: string;
   scheduled_date: string | null;
+  before_photo_url: string | null;
+  after_photo_url: string | null;
   customers: { full_name: string } | null;
 };
 
 export function StaffJobsList({ jobs: initialJobs }: { jobs: StaffJob[] }) {
   const [jobs, setJobs] = useState(initialJobs);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [openPhotosId, setOpenPhotosId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function markComplete(jobId: string) {
@@ -37,6 +42,24 @@ export function StaffJobsList({ jobs: initialJobs }: { jobs: StaffJob[] }) {
 
     setError(null);
     setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  }
+
+  function handlePhotoUploaded(
+    jobId: string,
+    slot: "before" | "after",
+    url: string
+  ) {
+    setJobs((prev) =>
+      prev.map((j) =>
+        j.id === jobId
+          ? {
+              ...j,
+              [slot === "before" ? "before_photo_url" : "after_photo_url"]:
+                url,
+            }
+          : j
+      )
+    );
   }
 
   if (jobs.length === 0) {
@@ -83,6 +106,40 @@ export function StaffJobsList({ jobs: initialJobs }: { jobs: StaffJob[] }) {
               {job.message}
             </p>
           )}
+
+          <div className="mt-4 border-t border-ink-900/10 pt-4">
+            <button
+              type="button"
+              onClick={() =>
+                setOpenPhotosId((prev) => (prev === job.id ? null : job.id))
+              }
+              className="flex w-full items-center justify-between text-left"
+            >
+              <span className="text-sm font-medium text-ink-900">
+                Before &amp; after photos
+              </span>
+              <span
+                className={`text-ink-700/50 transition-transform ${
+                  openPhotosId === job.id ? "rotate-180" : ""
+                }`}
+              >
+                ⌄
+              </span>
+            </button>
+            {openPhotosId === job.id && (
+              <div className="pt-3">
+                <BeforeAfterUploader
+                  leadId={job.id}
+                  companyId={job.company_id}
+                  beforeUrl={job.before_photo_url}
+                  afterUrl={job.after_photo_url}
+                  onUploaded={(slot, url) =>
+                    handlePhotoUploaded(job.id, slot, url)
+                  }
+                />
+              </div>
+            )}
+          </div>
 
           {job.status !== "completed" && (
             <button

@@ -892,3 +892,51 @@ drop policy if exists "Companies create own leads" on public.leads;
 create policy "Companies create own leads" on public.leads
 for insert
 with check (auth.uid () = company_id);
+
+-- =========================================================
+-- 23. Staff can upload before/after photos on their assigned jobs
+-- =========================================================
+-- job-photos objects are stored at "<company_id>/<lead_id>/<slot>-*",
+-- and the existing policies only let auth.uid() = the first folder
+-- segment (the company itself) write there. Staff sign in as their own
+-- auth.users row, not the company's, so without this they'd hit an RLS
+-- error the moment they tried to upload a photo for a job they're
+-- actually assigned to. Scoped the same way as "Staff update assigned
+-- jobs": only that lead's assigned staff member, only while active.
+drop policy if exists "Staff upload assigned job photos" on storage.objects;
+
+create policy "Staff upload assigned job photos" on storage.objects
+for insert
+  to authenticated
+with
+  check (
+    bucket_id = 'job-photos'
+    and exists (
+      select 1
+      from public.staff s
+      join public.leads l on l.assigned_staff_id = s.id
+      where
+        s.id = auth.uid ()
+        and s.active
+        and (storage.foldername (name)) [1] = s.company_id::text
+        and (storage.foldername (name)) [2] = l.id::text
+    )
+  );
+
+drop policy if exists "Staff update assigned job photos" on storage.objects;
+
+create policy "Staff update assigned job photos" on storage.objects
+for update
+  to authenticated using (
+    bucket_id = 'job-photos'
+    and exists (
+      select 1
+      from public.staff s
+      join public.leads l on l.assigned_staff_id = s.id
+      where
+        s.id = auth.uid ()
+        and s.active
+        and (storage.foldername (name)) [1] = s.company_id::text
+        and (storage.foldername (name)) [2] = l.id::text
+    )
+  );
