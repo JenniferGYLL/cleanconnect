@@ -823,3 +823,52 @@ group by
 
 grant select on public.company_directory to anon,
 authenticated;
+
+-- =========================================================
+-- 21. Staff accounts + job scheduling/assignment
+-- =========================================================
+-- Companies invite cleaners by email through a server-side route that
+-- uses the Supabase service role key (the same key already used for
+-- push notifications in app/api/notify). Each staff member becomes
+-- their own auth.users row, exactly like companies/customers, so they
+-- get the existing login + "forgot password" flow for free — the
+-- invite email lands them on /reset-password to choose their own
+-- password. Staff rows are only ever inserted by that service-role
+-- route, never by a normal authenticated session, so nobody can make
+-- themselves staff of a company they don't work for.
+create table if not exists public.staff (
+  id uuid references auth.users (id) on delete cascade primary key,
+  company_id uuid not null references public.companies (id) on delete cascade,
+  full_name text not null,
+  email text not null,
+  active boolean not null default true,
+  invited_at timestamptz not null default now()
+);
+
+alter table public.staff enable row level security;
+
+drop policy if exists "Staff can view own row" on public.staff;
+create policy "Staff can view own row" on public.staff
+  for select using (auth.uid () = id);
+
+drop policy if exists "Companies view own staff" on public.staff;
+create policy "Companies view own staff" on public.staff
+  for select using (auth.uid () = company_id);
+
+drop policy if exists "Companies update own staff" on public.staff;
+create policy "Companies update own staff" on public.staff
+  for update using (auth.uid () = company_id);
+
+-- "Jobs" is just leads once accepted, plus who's doing it and when.
+-- Both columns are nullable and additive — every existing lead, query,
+-- and the AI quote formula keep working completely unchanged.
+alter table public.leads add column if not exists assigned_staff_id uuid references public.staff (id) on delete set null;
+alter table public.leads add column if not exists scheduled_date date;
+
+drop policy if exists "Staff view assigned jobs" on public.leads;
+create policy "Staff view assigned jobs" on public.leads
+  for select using (auth.uid () = assigned_staff_id);
+
+drop policy if exists "Staff update assigned jobs" on public.leads;
+create policy "Staff update assigned jobs" on public.leads
+  for update using (auth.uid () = assigned_staff_id);

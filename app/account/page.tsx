@@ -33,5 +33,15 @@ export default async function AccountRedirectPage() {
     redirect("/my-bookings");
   }
 
+  const { data: staff } = await supabase
+    .from("staff")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (staff) {
+    redirect("/staff");
+  }
+
   redirect("/login");
 }
