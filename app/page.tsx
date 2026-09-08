@@ -157,26 +157,26 @@ export default function HomePage() {
             <FadeIn>
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-900/10 bg-white/80 px-4 py-1.5 text-xs font-medium tracking-wide text-ink-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-                A cleaner way to find cleaning
+                Cleaning, done properly, across Melbourne
               </span>
             </FadeIn>
 
             <FadeIn delay={0.08}>
               <h1 className="mt-8 max-w-xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-ink-900 sm:text-6xl">
-                Connecting cleaning companies with the{" "}
+                Tell us what you need.{" "}
                 <span className="bg-gradient-to-r from-brand-600 to-accent-600 bg-clip-text text-transparent">
-                  customers who need them
+                  We&apos;ll do the rest.
                 </span>
-                .
               </h1>
             </FadeIn>
 
             <FadeIn delay={0.16}>
               <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-700/70">
-                From commercial cleaning to garden maintenance, CleanConnect
-                gives small and mid-sized cleaning businesses a steady stream
-                of leads — and gives customers a simple way to find someone
-                they can trust.
+                Describe the clean you need — even out loud — and we&apos;ll
+                match you with a trusted local company, from a quick
+                end-of-lease to regular office cleaning. Running a cleaning
+                business? Get a steady stream of leads instead of chasing
+                quotes.
               </p>
             </FadeIn>
 

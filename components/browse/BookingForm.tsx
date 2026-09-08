@@ -19,6 +19,8 @@ const CATEGORY_LABEL: Record<Category, string> = Object.fromEntries(
   CATEGORIES.map((c) => [c.key, c.label])
 ) as Record<Category, string>;
 
+type VoicePhase = "idle" | "listening" | "processing" | "done";
+
 // --- Backward-compatible mapping onto the existing fixed leads columns ---
 // Residential and commercial keep writing bedrooms/bathrooms/
 // property_condition/job_type/job_frequency exactly as before, derived
@@ -73,7 +75,7 @@ function FieldControl({
   if (field.type === "select") {
     return (
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-slate-700">
+        <span className="mb-1 block text-sm font-medium text-ink-800">
           {field.label}
         </span>
         <select
@@ -95,7 +97,7 @@ function FieldControl({
   if (field.type === "number") {
     return (
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-slate-700">
+        <span className="mb-1 block text-sm font-medium text-ink-800">
           {field.label}
         </span>
         <input
@@ -114,7 +116,7 @@ function FieldControl({
 
   if (field.type === "checkbox") {
     return (
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-ink-800">
         <input
           type="checkbox"
           checked={!!value}
@@ -129,7 +131,7 @@ function FieldControl({
   const selected = Array.isArray(value) ? (value as string[]) : [];
   return (
     <div>
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1 block text-sm font-medium text-ink-800">
         {field.label}
       </span>
       <div className="flex flex-wrap gap-2">
@@ -148,7 +150,7 @@ function FieldControl({
               className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                 active
                   ? "border-brand-600 bg-brand-600 text-white"
-                  : "border-slate-200 text-slate-600 hover:border-slate-400"
+                  : "border-ink-900/15 text-ink-700 hover:border-ink-900/30"
               }`}
             >
               {o.label}
@@ -180,14 +182,20 @@ export function BookingForm({
   const [done, setDone] = useState(false);
 
   const [voiceSupported, setVoiceSupported] = useState(false);
-  const [listening, setListening] = useState(false);
+  const [voicePhase, setVoicePhase] = useState<VoicePhase>("idle");
   const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const SpeechRecognitionCtor =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     setVoiceSupported(!!SpeechRecognitionCtor);
+
+    return () => {
+      if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current);
+    };
   }, []);
 
   function updateAnswer(key: string, value: Answers[string]) {
@@ -199,10 +207,19 @@ export function BookingForm({
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
 
+    setVoiceError(null);
+    setVoiceTranscript("");
+
     const recognition = new SpeechRecognitionCtor();
     recognition.lang = "en-AU";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+
+    // Fires as soon as the browser detects the person has stopped talking —
+    // there's usually a beat between that and the final transcript coming
+    // back, so we surface it as its own "processing" state instead of
+    // leaving the mic looking stuck on "Listening".
+    recognition.onspeechend = () => setVoicePhase("processing");
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript as string;
@@ -210,19 +227,34 @@ export function BookingForm({
       const parsed = parseVoiceTranscript(transcript);
       if (parsed.category) setCategory(parsed.category);
       setAnswers((prev) => ({ ...prev, ...parsed.answers }));
-      setStep(2);
+      setVoicePhase("done");
+      advanceTimeoutRef.current = setTimeout(() => {
+        setVoicePhase("idle");
+        setStep(2);
+      }, 1100);
     };
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
+
+    recognition.onerror = (event: any) => {
+      setVoicePhase("idle");
+      setVoiceError(
+        event?.error === "no-speech"
+          ? "We didn't catch that — tap the mic and try again."
+          : "Voice input isn't available right now — you can fill in the details below instead."
+      );
+    };
+
+    recognition.onend = () => {
+      setVoicePhase((prev) => (prev === "listening" ? "idle" : prev));
+    };
 
     recognitionRef.current = recognition;
-    setListening(true);
+    setVoicePhase("listening");
     recognition.start();
   }
 
   function stopVoice() {
     recognitionRef.current?.stop();
-    setListening(false);
+    setVoicePhase("idle");
   }
 
   function handlePhotoSelect(files: FileList | null) {
@@ -245,7 +277,7 @@ export function BookingForm({
 
   if (!customerId) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+      <div className="rounded-2xl border border-dashed border-ink-900/10 bg-white/70 p-6 text-center text-sm text-ink-700/60">
         <Link href="/login" className="font-medium text-brand-600">
           Sign in
         </Link>{" "}
@@ -260,7 +292,7 @@ export function BookingForm({
 
   if (done) {
     return (
-      <div className="rounded-xl border border-brand-200 bg-brand-50 p-6 text-center text-sm text-brand-700">
+      <div className="rounded-2xl border border-brand-200 bg-brand-50 p-6 text-center text-sm text-brand-700">
         Request sent — track it from{" "}
         <Link href="/my-bookings" className="font-semibold underline">
           My bookings
@@ -356,18 +388,18 @@ export function BookingForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center gap-2 text-xs text-slate-400">
+      <div className="flex items-center gap-2 text-xs text-ink-700/40">
         <StepDot active={step >= 1} /> Type of clean
-        <span className="text-slate-300">—</span>
+        <span className="text-ink-900/15">—</span>
         <StepDot active={step >= 2} /> Details
-        <span className="text-slate-300">—</span>
+        <span className="text-ink-900/15">—</span>
         <StepDot active={step >= 3} /> Photos &amp; submit
       </div>
 
       {step === 1 && (
         <div className="space-y-4">
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-ink-800">
               What type of clean?
             </span>
             <select
@@ -387,28 +419,52 @@ export function BookingForm({
           </label>
 
           {voiceSupported && (
-            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50/40 p-3">
+            <div className="rounded-2xl border border-dashed border-brand-300/60 bg-brand-50/40 p-4">
               <button
                 type="button"
-                onClick={listening ? stopVoice : startVoice}
-                className={`w-full rounded-full py-2 text-xs font-medium transition ${
-                  listening
+                onClick={voicePhase === "listening" ? stopVoice : startVoice}
+                disabled={voicePhase === "processing" || voicePhase === "done"}
+                className={`relative flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-xs font-medium transition disabled:cursor-default ${
+                  voicePhase === "listening"
                     ? "bg-red-500 text-white"
+                    : voicePhase === "processing"
+                    ? "bg-ink-900/10 text-ink-700"
+                    : voicePhase === "done"
+                    ? "bg-brand-600 text-white"
                     : "border border-brand-300 text-brand-700 hover:border-brand-500"
                 }`}
               >
-                {listening
-                  ? "Listening… tap to stop"
-                  : "🎤 Or just describe it out loud"}
+                {voicePhase === "listening" && (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+                    </span>
+                    Listening… tap to stop
+                  </>
+                )}
+                {voicePhase === "processing" && (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-ink-700/30 border-t-ink-700" />
+                    Got it — one sec…
+                  </>
+                )}
+                {voicePhase === "done" && <>✓ Done — filling in your answers…</>}
+                {voicePhase === "idle" && <>🎤 Or just describe it out loud</>}
               </button>
-              <p className="mt-1.5 text-center text-[11px] text-slate-400">
+              <p className="mt-1.5 text-center text-[11px] text-ink-700/50">
                 e.g. &ldquo;3 bedroom 2 bathroom apartment, needs a deep
                 clean&rdquo; — we&apos;ll pre-fill what we can, you can still
                 check and edit everything.
               </p>
-              {voiceTranscript && (
-                <p className="mt-2 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs text-slate-500">
+              {voiceTranscript && voicePhase !== "listening" && (
+                <p className="mt-2 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs text-ink-700/60">
                   We heard: &ldquo;{voiceTranscript}&rdquo;
+                </p>
+              )}
+              {voiceError && (
+                <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-red-600">
+                  {voiceError}
                 </p>
               )}
             </div>
@@ -433,7 +489,7 @@ export function BookingForm({
             </p>
           )}
           {fields.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500">
+            <p className="rounded-lg border border-dashed border-ink-900/10 bg-white/70 p-4 text-sm text-ink-700/60">
               Tell us what you need in the details box on the next step — the
               company will follow up on anything specific.
             </p>
@@ -469,8 +525,8 @@ export function BookingForm({
       {step === 3 && (
         <div className="space-y-4">
           {answerLines.length > 0 && (
-            <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-              <p className="mb-1 font-medium text-slate-600">
+            <div className="rounded-xl bg-ink-900/[0.03] px-3 py-2 text-xs text-ink-700/60">
+              <p className="mb-1 font-medium text-ink-700/80">
                 {CATEGORY_LABEL[category]}
               </p>
               {answerLines.map((line, i) => (
@@ -482,7 +538,7 @@ export function BookingForm({
           )}
 
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-ink-800">
               Address
             </span>
             <input
@@ -494,7 +550,7 @@ export function BookingForm({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-ink-800">
               Anything else the company should know?{" "}
               {category === "other" ? "" : "(optional)"}
             </span>
@@ -513,10 +569,10 @@ export function BookingForm({
           </label>
 
           <div className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">
+            <span className="mb-1 block text-sm font-medium text-ink-800">
               Photos of the property (up to {MAX_PHOTOS})
             </span>
-            <p className="mb-2 text-xs text-slate-400">
+            <p className="mb-2 text-xs text-ink-700/50">
               {encouragePhotos
                 ? "Strongly recommended for this type of job — a few photos help avoid surprises later, but it's still optional."
                 : "Optional — a few photos help the company give you a more accurate quote."}
@@ -525,7 +581,7 @@ export function BookingForm({
               {photoPreviews.map((src, i) => (
                 <div
                   key={i}
-                  className="group relative h-16 w-16 overflow-hidden rounded-lg border border-slate-200"
+                  className="group relative h-16 w-16 overflow-hidden rounded-lg border border-ink-900/10"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -544,7 +600,7 @@ export function BookingForm({
                 </div>
               ))}
               {photos.length < MAX_PHOTOS && (
-                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400 hover:border-slate-400 hover:text-slate-600">
+                <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-ink-900/15 text-xs text-ink-700/40 hover:border-ink-900/30 hover:text-ink-700/70">
                   + Add
                   <input
                     type="file"
@@ -558,7 +614,7 @@ export function BookingForm({
             </div>
           </div>
 
-          <label className="flex items-start gap-2 text-xs text-slate-500">
+          <label className="flex items-start gap-2 text-xs text-ink-700/60">
             <input
               type="checkbox"
               required
@@ -605,7 +661,7 @@ function StepDot({ active }: { active: boolean }) {
   return (
     <span
       className={`inline-block h-1.5 w-1.5 rounded-full ${
-        active ? "bg-brand-500" : "bg-slate-200"
+        active ? "bg-brand-500" : "bg-ink-900/10"
       }`}
     />
   );
