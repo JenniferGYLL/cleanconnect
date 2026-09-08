@@ -4,6 +4,7 @@ export type DirectoryCompany = {
   id: string;
   company_name: string;
   service_area: string | null;
+  created_at: string;
   average_rating: number;
   review_count: number;
   logo_url: string | null;
@@ -13,9 +14,17 @@ export type DirectoryCompany = {
   abn: string | null;
   years_in_business: number | null;
   team_size: number | null;
+  avg_response_hours: number | null;
 };
 
 const MAX_SERVICE_BADGES = 3;
+
+export function formatResponseTime(hours: number): string {
+  if (hours < 1) return "Usually replies within the hour";
+  if (hours < 24) return `Usually replies within ${Math.round(hours)}h`;
+  const days = Math.round(hours / 24);
+  return `Usually replies within ${days} day${days === 1 ? "" : "s"}`;
+}
 
 export function CompanyCard({ company }: { company: DirectoryCompany }) {
   const services = company.services ?? [];
@@ -82,6 +91,12 @@ export function CompanyCard({ company }: { company: DirectoryCompany }) {
 
       {company.service_area && (
         <p className="mt-3 text-xs text-ink-700/50">{company.service_area}</p>
+      )}
+
+      {company.avg_response_hours != null && (
+        <p className="mt-1 text-xs font-medium text-brand-700">
+          {formatResponseTime(company.avg_response_hours)}
+        </p>
       )}
 
       <div className="mt-auto flex gap-2 pt-4">

@@ -825,6 +825,68 @@ grant select on public.company_directory to anon,
 authenticated;
 
 -- =========================================================
+-- 24. Customer matching — filter/sort signal for /browse
+-- =========================================================
+-- "How fast does this company usually respond to a new lead" computed
+-- from real data that already exists (no new tracking needed): the
+-- gap between a lead landing and that lead's quote being sent. Kept as
+-- its own pre-aggregated subquery rather than another join alongside
+-- the reviews join above, so it can't fan out and skew average_rating.
+create or replace view public.company_directory as
+select
+  c.id,
+  c.company_name,
+  c.service_area,
+  c.created_at,
+  coalesce(avg(r.rating), 0)::float8 as average_rating,
+  count(r.id)::int as review_count,
+  c.logo_url,
+  c.description,
+  c.services,
+  c.photos,
+  c.abn,
+  c.years_in_business,
+  c.team_size,
+  rt.avg_response_hours
+from
+  public.companies c
+  left join public.reviews r on r.company_id = c.id
+  left join (
+    select
+      q.company_id,
+      avg(
+        extract(
+          epoch
+          from
+            (q.created_at - l.created_at)
+        ) / 3600.0
+      )::float8 as avg_response_hours
+    from
+      public.quotes q
+      join public.leads l on l.id = q.lead_id
+    group by
+      q.company_id
+  ) rt on rt.company_id = c.id
+where
+  c.approved = true
+group by
+  c.id,
+  c.company_name,
+  c.service_area,
+  c.created_at,
+  c.logo_url,
+  c.description,
+  c.services,
+  c.photos,
+  c.abn,
+  c.years_in_business,
+  c.team_size,
+  rt.avg_response_hours;
+
+grant select on public.company_directory to anon,
+authenticated;
+
+-- =========================================================
 -- 21. Staff accounts + job scheduling/assignment
 -- =========================================================
 -- Companies invite cleaners by email through a server-side route that

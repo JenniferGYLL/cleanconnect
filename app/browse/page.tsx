@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { SiteNav } from "@/components/layout/SiteNav";
 import { FadeIn } from "@/components/motion/FadeIn";
-import { CompanyCard, type DirectoryCompany } from "@/components/browse/CompanyCard";
+import { type DirectoryCompany } from "@/components/browse/CompanyCard";
+import { BrowseList } from "@/components/browse/BrowseList";
 
 export default async function BrowsePage() {
   const supabase = createClient();
@@ -40,10 +41,8 @@ export default async function BrowsePage() {
               </div>
             </FadeIn>
           ) : (
-            <FadeIn delay={0.05} className="mt-10 grid gap-5 sm:grid-cols-2">
-              {list.map((company) => (
-                <CompanyCard key={company.id} company={company} />
-              ))}
+            <FadeIn delay={0.05} className="mt-10">
+              <BrowseList companies={list} />
             </FadeIn>
           )}
         </div>
