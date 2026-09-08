@@ -107,6 +107,13 @@ export function CompanyNav({
                   >
                     Pricing settings
                   </Link>
+                  <Link
+                    href="/dashboard/insights"
+                    onClick={() => setMenuOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-ink-800 hover:bg-white/70"
+                  >
+                    Quote insights
+                  </Link>
                   <div className="mt-1 border-t border-ink-900/5 px-3 py-2">
                     <LogoutButton />
                   </div>
