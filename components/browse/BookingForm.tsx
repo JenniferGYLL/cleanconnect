@@ -186,16 +186,11 @@ export function BookingForm({
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
-  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const SpeechRecognitionCtor =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     setVoiceSupported(!!SpeechRecognitionCtor);
-
-    return () => {
-      if (advanceTimeoutRef.current) clearTimeout(advanceTimeoutRef.current);
-    };
   }, []);
 
   function updateAnswer(key: string, value: Answers[string]) {
@@ -228,10 +223,6 @@ export function BookingForm({
       if (parsed.category) setCategory(parsed.category);
       setAnswers((prev) => ({ ...prev, ...parsed.answers }));
       setVoicePhase("done");
-      advanceTimeoutRef.current = setTimeout(() => {
-        setVoicePhase("idle");
-        setStep(2);
-      }, 1100);
     };
 
     recognition.onerror = (event: any) => {
@@ -255,6 +246,12 @@ export function BookingForm({
   function stopVoice() {
     recognitionRef.current?.stop();
     setVoicePhase("idle");
+  }
+
+  function retryVoice() {
+    setVoicePhase("idle");
+    setVoiceTranscript("");
+    setVoiceError(null);
   }
 
   function handlePhotoSelect(files: FileList | null) {
@@ -449,7 +446,7 @@ export function BookingForm({
                     Got it — one sec…
                   </>
                 )}
-                {voicePhase === "done" && <>✓ Done — filling in your answers…</>}
+                {voicePhase === "done" && <>✓ Got it</>}
                 {voicePhase === "idle" && <>🎤 Or just describe it out loud</>}
               </button>
               <p className="mt-1.5 text-center text-[11px] text-ink-700/50">
@@ -457,7 +454,7 @@ export function BookingForm({
                 clean&rdquo; — we&apos;ll pre-fill what we can, you can still
                 check and edit everything.
               </p>
-              {voiceTranscript && voicePhase !== "listening" && (
+              {voiceTranscript && voicePhase !== "listening" && voicePhase !== "done" && (
                 <p className="mt-2 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs text-ink-700/60">
                   We heard: &ldquo;{voiceTranscript}&rdquo;
                 </p>
@@ -466,6 +463,53 @@ export function BookingForm({
                 <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-red-600">
                   {voiceError}
                 </p>
+              )}
+
+              {voicePhase === "done" && (
+                <div className="mt-3 rounded-xl bg-white/80 p-3">
+                  <p className="text-xs font-medium text-ink-800">
+                    Here&apos;s what we understood:
+                  </p>
+                  <p className="mt-1 text-xs text-ink-700/60">
+                    We heard: &ldquo;{voiceTranscript}&rdquo;
+                  </p>
+                  <div className="mt-2 rounded-lg bg-ink-900/[0.03] px-2.5 py-2 text-xs text-ink-700">
+                    <p className="font-medium text-ink-800">
+                      {CATEGORY_LABEL[category]}
+                    </p>
+                    {answerLines.length > 0 ? (
+                      answerLines.map((line, i) => (
+                        <p key={i} className="mt-0.5">
+                          {line.label}: {line.value}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="mt-0.5 text-ink-700/50">
+                        We caught the type of clean — add the details on the
+                        next step.
+                      </p>
+                    )}
+                  </div>
+                  <div className="mt-2.5 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={retryVoice}
+                      className="btn-ghost flex-1 py-2 text-xs"
+                    >
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoicePhase("idle");
+                        setStep(2);
+                      }}
+                      className="btn-primary flex-1 py-2 text-xs"
+                    >
+                      Looks good, continue
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
