@@ -60,14 +60,14 @@ export function ReviewForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+    <form onSubmit={handleSubmit} className="mt-4 space-y-2.5 rounded-2xl border border-ink-900/[0.06] bg-white/70 p-4">
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => setRating(value)}
-            className={`text-lg ${value <= rating ? "text-amber-500" : "text-slate-300"}`}
+            className={`text-lg ${value <= rating ? "text-gold-500" : "text-ink-900/15"}`}
             aria-label={`${value} star${value === 1 ? "" : "s"}`}
           >
             ★
@@ -91,10 +91,10 @@ export function ReviewForm({
       </button>
 
       {detailOpen && (
-        <div className="space-y-1.5 rounded-lg bg-white p-2.5">
+        <div className="space-y-1.5 rounded-xl bg-white p-2.5">
           {DIMENSIONS.map((d) => (
             <div key={d.key} className="flex items-center justify-between">
-              <span className="text-xs text-slate-600">{d.label}</span>
+              <span className="text-xs text-ink-700/70">{d.label}</span>
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <button
@@ -105,8 +105,8 @@ export function ReviewForm({
                     }
                     className={`text-sm ${
                       value <= (dimensions[d.key] ?? 0)
-                        ? "text-amber-500"
-                        : "text-slate-300"
+                        ? "text-gold-500"
+                        : "text-ink-900/15"
                     }`}
                     aria-label={`${d.label}: ${value} star${value === 1 ? "" : "s"}`}
                   >
@@ -127,7 +127,7 @@ export function ReviewForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-full bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+        className="rounded-full bg-ink-900 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-ink-800 disabled:opacity-60"
       >
         {loading ? "Submitting…" : "Submit review"}
       </button>

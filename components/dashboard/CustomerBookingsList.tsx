@@ -101,8 +101,12 @@ export default function CustomerBookingsList({
 
   if (bookings.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
-        No bookings yet — browse companies to request one.
+      <div className="glass-surface rounded-2xl border border-dashed border-ink-900/10 p-8 text-center text-sm text-ink-700/60">
+        No bookings yet —{" "}
+        <a href="/browse" className="font-medium text-brand-600 underline underline-offset-2">
+          browse companies
+        </a>{" "}
+        to request one.
       </div>
     );
   }
@@ -126,32 +130,32 @@ export default function CustomerBookingsList({
   };
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {bookings.map((booking) => (
         <li
           key={booking.id}
-          className="rounded-xl border border-slate-100 bg-white p-4"
+          className="glass-surface spotlight-border rounded-2xl p-5"
         >
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-slate-900">
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-display font-medium text-ink-900">
               {booking.companies?.company_name ?? "Cleaning company"}
             </span>
-            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
+            <span className="shrink-0 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
               {statusLabel[booking.status] ?? booking.status}
             </span>
           </div>
           {booking.service_type && (
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-ink-700/60">
               Service: {booking.service_type}
             </p>
           )}
           {booking.info_requested_note && (
-            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
               The company asked: &ldquo;{booking.info_requested_note}&rdquo;
             </p>
           )}
           {booking.inspectionPending && (
-            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
               The company would like to inspect the property before
               finalizing your quote.
             </p>
@@ -164,13 +168,13 @@ export default function CustomerBookingsList({
             />
           )}
           {(booking.before_photo_url || booking.after_photo_url) && (
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               {booking.before_photo_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={booking.before_photo_url}
                   alt="Before"
-                  className="aspect-video w-full rounded-lg object-cover"
+                  className="aspect-video w-full rounded-xl object-cover"
                 />
               )}
               {booking.after_photo_url && (
@@ -178,7 +182,7 @@ export default function CustomerBookingsList({
                 <img
                   src={booking.after_photo_url}
                   alt="After"
-                  className="aspect-video w-full rounded-lg object-cover"
+                  className="aspect-video w-full rounded-xl object-cover"
                 />
               )}
             </div>

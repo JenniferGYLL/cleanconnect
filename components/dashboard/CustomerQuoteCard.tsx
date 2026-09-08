@@ -56,7 +56,7 @@ export function CustomerQuoteCard({
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-brand-100 bg-brand-50/60 p-4">
+    <div className="mt-4 rounded-2xl border border-brand-200/60 bg-brand-50/60 p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
         {quote.status === "accepted"
           ? "Quote accepted"
@@ -64,12 +64,12 @@ export function CustomerQuoteCard({
           ? "Updated quote — needs your OK"
           : "Quote ready"}
       </p>
-      <p className="mt-1 font-display text-2xl font-semibold text-slate-900">
+      <p className="mt-1 font-display text-2xl font-semibold text-ink-900">
         ${Math.round(total)}
       </p>
 
       {hasAdjustment ? (
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-1 text-xs text-ink-700/70">
           Original estimate ${Math.round(quote.final_price ?? 0)} + additional
           ${Math.round(quote.additional_charge ?? 0)}
           {quote.additional_charge_reason
@@ -80,14 +80,14 @@ export function CustomerQuoteCard({
         </p>
       ) : (
         quote.status !== "accepted" && (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-700/60">
             Based on the information provided — this is an estimate, not a
             guaranteed final price, until you accept it.
           </p>
         )
       )}
 
-      <div className="mt-2 space-y-1 text-sm text-slate-600">
+      <div className="mt-2 space-y-1 text-sm text-ink-700/80">
         <p>✓ Clean as requested</p>
         {(quote.addons ?? []).map((addon, i) => (
           <p key={i}>
@@ -107,7 +107,7 @@ export function CustomerQuoteCard({
           type="button"
           onClick={accept}
           disabled={accepting}
-          className="btn-primary mt-3 w-full py-2 text-sm disabled:opacity-60"
+          className="btn-primary mt-4 w-full py-2.5 text-sm disabled:opacity-60"
         >
           {accepting
             ? "Accepting…"

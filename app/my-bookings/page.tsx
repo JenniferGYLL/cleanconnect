@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CustomerBookingsList from "@/components/dashboard/CustomerBookingsList";
-import LogoutButton from "@/app/dashboard/LogoutButton";
-import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
+import { CustomerNav } from "@/components/dashboard/CustomerNav";
+import { FadeIn } from "@/components/motion/FadeIn";
 
 type BookingQuote = {
   id: string;
@@ -96,38 +95,30 @@ export default async function MyBookingsPage() {
   }));
 
   return (
-    <main className="min-h-screen bg-surface">
-      <header className="border-b border-slate-100 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="font-display text-lg font-semibold text-slate-900">
+    <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24">
+      <div className="bg-mesh-1 pointer-events-none absolute inset-0 opacity-60" />
+      <div className="relative">
+        <div className="mx-auto max-w-3xl px-4 pt-6">
+          <CustomerNav customerName={customer.full_name} email={user.email ?? ""} />
+        </div>
+
+        <div className="mx-auto max-w-3xl px-6">
+          <FadeIn>
+            <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
               {customer.full_name}
             </p>
-            <p className="text-xs text-slate-400">{user.email}</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/browse"
-              className="text-xs font-medium text-brand-600 hover:text-brand-700"
-            >
-              Browse companies
-            </Link>
-            <NotificationOptIn />
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
+            <h1 className="mt-1 font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
+              My bookings
+            </h1>
+          </FadeIn>
 
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="font-display text-xl font-semibold text-slate-900">
-          My bookings
-        </h1>
-        <div className="mt-6">
-          <CustomerBookingsList
-            customerId={user.id}
-            customerName={customer.full_name}
-            bookings={bookingsWithReviewFlag}
-          />
+          <div className="mt-6">
+            <CustomerBookingsList
+              customerId={user.id}
+              customerName={customer.full_name}
+              bookings={bookingsWithReviewFlag}
+            />
+          </div>
         </div>
       </div>
     </main>
