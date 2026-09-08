@@ -716,3 +716,110 @@ execute function public.protect_customer_quote_update ();
 -- or the existing AI quote formula for residential jobs changes.
 alter table public.leads
 add column if not exists service_details jsonb not null default '{}'::jsonb;
+
+-- =========================================================
+-- 19. Company profile richness (trust display for customers)
+-- =========================================================
+-- Companies can optionally fill these in from a new dashboard page
+-- (/dashboard/profile). Nothing here is required at signup — matches
+-- the existing "don't demand data upfront" registration pattern.
+alter table public.companies add column if not exists logo_url text;
+alter table public.companies add column if not exists description text;
+alter table public.companies add column if not exists services text[] not null default '{}';
+alter table public.companies add column if not exists photos text[] not null default '{}';
+alter table public.companies add column if not exists abn text;
+alter table public.companies add column if not exists years_in_business int;
+alter table public.companies add column if not exists team_size int;
+
+-- Storage bucket for company logo + work photos (public read, company-
+-- folder-scoped write) — same permission model as job-photos/lead-photos.
+insert into
+  storage.buckets (id, name, public)
+values
+  ('company-media', 'company-media', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Companies upload own media" on storage.objects;
+create policy "Companies upload own media" on storage.objects
+for insert
+  to authenticated
+with
+  check (
+    bucket_id = 'company-media'
+    and (storage.foldername (name)) [1] = auth.uid ()::text
+  );
+
+drop policy if exists "Companies update own media" on storage.objects;
+create policy "Companies update own media" on storage.objects
+for update
+  to authenticated using (
+    bucket_id = 'company-media'
+    and (storage.foldername (name)) [1] = auth.uid ()::text
+  );
+
+drop policy if exists "Companies delete own media" on storage.objects;
+create policy "Companies delete own media" on storage.objects
+for delete
+  to authenticated using (
+    bucket_id = 'company-media'
+    and (storage.foldername (name)) [1] = auth.uid ()::text
+  );
+
+drop policy if exists "Anyone can view company media" on storage.objects;
+create policy "Anyone can view company media" on storage.objects
+for select using (bucket_id = 'company-media');
+
+-- =========================================================
+-- 20. Review dimensions + verification source
+-- =========================================================
+-- Every review today already comes from a real completed booking
+-- (reviews.lead_id is unique + only insertable by that booking's
+-- customer once status = 'completed') — so "source" exists mainly to
+-- distinguish a future imported/external review (e.g. Google) from a
+-- platform-verified one, without ever mislabeling the latter as the
+-- former. Dimension ratings are optional and nullable — the existing
+-- single `rating` column keeps working exactly as before either way.
+alter table public.reviews add column if not exists quality_rating int check (quality_rating between 1 and 5);
+alter table public.reviews add column if not exists communication_rating int check (communication_rating between 1 and 5);
+alter table public.reviews add column if not exists punctuality_rating int check (punctuality_rating between 1 and 5);
+alter table public.reviews add column if not exists value_rating int check (value_rating between 1 and 5);
+alter table public.reviews add column if not exists source text not null default 'verified_booking';
+
+-- Extend the public directory view with the new profile fields. New
+-- columns are appended at the end so this stays a valid
+-- create-or-replace (existing column order/types are unchanged).
+create or replace view public.company_directory as
+select
+  c.id,
+  c.company_name,
+  c.service_area,
+  c.created_at,
+  coalesce(avg(r.rating), 0)::float8 as average_rating,
+  count(r.id)::int as review_count,
+  c.logo_url,
+  c.description,
+  c.services,
+  c.photos,
+  c.abn,
+  c.years_in_business,
+  c.team_size
+from
+  public.companies c
+  left join public.reviews r on r.company_id = c.id
+where
+  c.approved = true
+group by
+  c.id,
+  c.company_name,
+  c.service_area,
+  c.created_at,
+  c.logo_url,
+  c.description,
+  c.services,
+  c.photos,
+  c.abn,
+  c.years_in_business,
+  c.team_size;
+
+grant select on public.company_directory to anon,
+authenticated;

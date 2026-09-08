@@ -1,6 +1,14 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SiteNav } from "@/components/layout/SiteNav";
+import { FadeIn } from "@/components/motion/FadeIn";
+import { SpotlightCard } from "@/components/motion/SpotlightCard";
 import { BookingForm } from "@/components/browse/BookingForm";
+import {
+  ReviewsScroller,
+  type DirectoryReview,
+} from "@/components/browse/ReviewsScroller";
+import type { DirectoryCompany } from "@/components/browse/CompanyCard";
 
 export default async function CompanyProfilePage({
   params,
@@ -18,10 +26,13 @@ export default async function CompanyProfilePage({
   if (!company) {
     notFound();
   }
+  const directoryCompany = company as DirectoryCompany;
 
   const { data: reviews } = await supabase
     .from("reviews")
-    .select("id, customer_name, rating, comment, created_at")
+    .select(
+      "id, customer_name, rating, comment, quality_rating, communication_rating, punctuality_rating, value_rating, source, created_at"
+    )
     .eq("company_id", params.companyId)
     .order("created_at", { ascending: false });
 
@@ -39,68 +50,172 @@ export default async function CompanyProfilePage({
     customerId = customer?.id ?? null;
   }
 
+  const initial =
+    directoryCompany.company_name.trim().charAt(0).toUpperCase() || "C";
+
   return (
-    <main className="min-h-screen bg-surface px-6 py-12">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="font-display text-2xl font-semibold text-slate-900">
-          {company.company_name}
-        </h1>
-        {company.service_area && (
-          <p className="mt-1 text-sm text-slate-500">{company.service_area}</p>
-        )}
-        {company.review_count > 0 ? (
-          <p className="mt-2 text-sm text-amber-500">
-            ★ {company.average_rating.toFixed(1)}{" "}
-            <span className="text-slate-400">
-              ({company.review_count} reviews)
-            </span>
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-slate-400">No reviews yet</p>
-        )}
+    <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24">
+      <div className="bg-mesh-1 pointer-events-none absolute inset-0 opacity-60" />
+      <div className="relative">
+        <SiteNav />
 
-        <div className="mt-8 grid gap-8 md:grid-cols-2">
-          <div>
-            <h2 className="font-display text-lg font-semibold text-slate-900">
-              Request a booking
-            </h2>
-            <div className="mt-4">
-              <BookingForm companyId={company.id} customerId={customerId} />
+        <div className="mx-auto max-w-5xl px-6 pt-12">
+          {/* Header */}
+          <FadeIn>
+            <div className="glass-surface flex flex-col gap-5 rounded-2xl p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-lg font-semibold text-brand-700">
+                  {directoryCompany.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={directoryCompany.logo_url}
+                      alt={`${directoryCompany.company_name} logo`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    initial
+                  )}
+                </div>
+                <div>
+                  <h1 className="font-display text-xl font-semibold text-ink-900 sm:text-2xl">
+                    {directoryCompany.company_name}
+                  </h1>
+                  {directoryCompany.review_count > 0 ? (
+                    <p className="mt-1 text-sm text-ink-700/60">
+                      <span className="text-gold-500">
+                        ★ {directoryCompany.average_rating.toFixed(1)}
+                      </span>{" "}
+                      · {directoryCompany.review_count} Verified Review
+                      {directoryCompany.review_count === 1 ? "" : "s"}
+                      {directoryCompany.service_area &&
+                        ` · ${directoryCompany.service_area}`}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-ink-700/50">
+                      No reviews yet
+                      {directoryCompany.service_area &&
+                        ` · ${directoryCompany.service_area}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <a
+                href="#request"
+                className="btn-primary shrink-0 px-6 py-2.5 text-sm"
+              >
+                Request a Cleaning
+              </a>
             </div>
-          </div>
+          </FadeIn>
 
-          <div>
-            <h2 className="font-display text-lg font-semibold text-slate-900">
-              Reviews
-            </h2>
-            <div className="mt-4 space-y-3">
-              {(reviews ?? []).length === 0 ? (
-                <p className="text-sm text-slate-500">No reviews yet.</p>
-              ) : (
-                (reviews ?? []).map((review) => (
-                  <div
-                    key={review.id}
-                    className="rounded-xl border border-slate-100 bg-white p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-slate-900">
-                        {review.customer_name ?? "Anonymous customer"}
-                      </span>
-                      {review.rating != null && (
-                        <span className="text-sm text-amber-500">
-                          {"★".repeat(review.rating)}
-                          {"☆".repeat(5 - review.rating)}
-                        </span>
-                      )}
-                    </div>
-                    {review.comment && (
-                      <p className="mt-2 text-sm text-slate-700">
-                        {review.comment}
-                      </p>
+          <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-8">
+              {/* About */}
+              {directoryCompany.description && (
+                <FadeIn delay={0.05}>
+                  <SpotlightCard className="rounded-2xl p-6">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
+                      About
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-800">
+                      {directoryCompany.description}
+                    </p>
+                    {(directoryCompany.years_in_business ||
+                      directoryCompany.team_size) && (
+                      <div className="mt-4 flex flex-wrap gap-4 text-xs text-ink-700/60">
+                        {directoryCompany.years_in_business && (
+                          <span>
+                            {directoryCompany.years_in_business} years in
+                            business
+                          </span>
+                        )}
+                        {directoryCompany.team_size && (
+                          <span>Team of {directoryCompany.team_size}</span>
+                        )}
+                      </div>
                     )}
-                  </div>
-                ))
+                  </SpotlightCard>
+                </FadeIn>
               )}
+
+              {/* Services */}
+              {(directoryCompany.services ?? []).length > 0 && (
+                <FadeIn delay={0.08}>
+                  <SpotlightCard className="rounded-2xl p-6">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
+                      Services
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {(directoryCompany.services ?? []).map((service) => (
+                        <span
+                          key={service}
+                          className="rounded-full bg-ink-950/[0.04] px-3 py-1.5 text-xs font-medium text-ink-700"
+                        >
+                          {service}
+                        </span>
+                      ))}
+                    </div>
+                  </SpotlightCard>
+                </FadeIn>
+              )}
+
+              {/* Work photos */}
+              {(directoryCompany.photos ?? []).length > 0 && (
+                <FadeIn delay={0.1}>
+                  <SpotlightCard className="rounded-2xl p-6">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
+                      Recent work
+                    </p>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {(directoryCompany.photos ?? []).map((url, i) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`${directoryCompany.company_name} work photo ${
+                            i + 1
+                          }`}
+                          className="aspect-square w-full rounded-xl object-cover"
+                        />
+                      ))}
+                    </div>
+                  </SpotlightCard>
+                </FadeIn>
+              )}
+
+              {/* Reviews */}
+              <FadeIn delay={0.12}>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
+                    Reviews
+                  </p>
+                  <div className="mt-3">
+                    <ReviewsScroller
+                      reviews={(reviews ?? []) as DirectoryReview[]}
+                    />
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+
+            {/* Request a booking */}
+            <div id="request" className="scroll-mt-24">
+              <FadeIn delay={0.05}>
+                <SpotlightCard className="rounded-2xl p-6">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
+                    Request a booking
+                  </p>
+                  <h2 className="mt-1 font-display text-lg font-semibold text-ink-900">
+                    Tell us what you need
+                  </h2>
+                  <div className="mt-4">
+                    <BookingForm
+                      companyId={directoryCompany.id}
+                      customerId={customerId}
+                    />
+                  </div>
+                </SpotlightCard>
+              </FadeIn>
             </div>
           </div>
         </div>

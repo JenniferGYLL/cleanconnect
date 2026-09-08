@@ -10,6 +10,13 @@ export type Company = {
   service_area: string | null;
   approved: boolean;
   created_at: string;
+  logo_url: string | null;
+  description: string | null;
+  services: string[] | null;
+  photos: string[] | null;
+  abn: string | null;
+  years_in_business: number | null;
+  team_size: number | null;
 };
 
 // Shared guard for every /dashboard/* page: confirms the visitor is a

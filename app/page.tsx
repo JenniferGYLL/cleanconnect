@@ -183,17 +183,17 @@ export default function HomePage() {
             <FadeIn delay={0.24}>
               <div className="mt-10 flex flex-wrap items-center gap-4">
                 <Link
-                  href="/signup"
+                  href="/browse"
                   className="btn-primary px-7 py-3 text-[15px]"
                 >
-                  List your company
+                  Request a Cleaning
                 </Link>
-                <a
-                  href="#how-it-works"
+                <Link
+                  href="/signup"
                   className="btn-ghost px-7 py-3 text-[15px]"
                 >
-                  See how it works
-                </a>
+                  Join as a Cleaning Business
+                </Link>
               </div>
             </FadeIn>
           </div>
@@ -209,21 +209,24 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-6 lg:grid-cols-5">
             <FadeIn className="lg:col-span-2">
-              <SpotlightCard className="h-full rounded-2xl p-8 sm:mt-10">
+              <SpotlightCard className="group h-full rounded-2xl p-8 sm:mt-10">
                 <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
                   For customers
                 </span>
                 <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
-                  Find a cleaner you can trust
+                  Tell us what you need. We&apos;ll do the rest.
                 </h3>
                 <p className="mt-3 text-ink-700/70">
-                  Browse cleaning companies, compare reviews and get quotes —
-                  launching soon.
+                  Browse verified cleaning companies, compare real reviews and
+                  request a booking in minutes — even by voice.
                 </p>
                 <div className="mt-8 flex items-end">
-                  <span className="inline-block text-sm font-medium text-ink-700/40">
-                    Coming soon
-                  </span>
+                  <Link
+                    href="/browse"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-ink-900 transition group-hover:gap-2"
+                  >
+                    Browse companies <span aria-hidden>→</span>
+                  </Link>
                 </div>
               </SpotlightCard>
             </FadeIn>
