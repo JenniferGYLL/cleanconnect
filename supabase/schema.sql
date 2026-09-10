@@ -1016,3 +1016,11 @@ for update
 alter table public.leads add column if not exists photo_qc_status text not null default 'pending' check (photo_qc_status in ('pending', 'approved', 'flagged'));
 alter table public.leads add column if not exists photo_qc_note text;
 alter table public.leads add column if not exists photo_qc_reviewed_at timestamptz;
+
+-- =========================================================
+-- 26. Remove pricing_rules (dead table)
+-- =========================================================
+-- Leftover from an earlier pricing model, fully superseded by
+-- company_pricing_profiles. Confirmed unused — no app code reads or
+-- writes it. Safe to drop.
+drop table if exists public.pricing_rules;
