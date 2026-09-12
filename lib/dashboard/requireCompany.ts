@@ -17,6 +17,7 @@ export type Company = {
   abn: string | null;
   years_in_business: number | null;
   team_size: number | null;
+  org_type: "property_manager" | "contractor";
 };
 
 // Shared guard for every /dashboard/* page: confirms the visitor is a

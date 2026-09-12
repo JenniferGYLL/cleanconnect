@@ -4,7 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
+type OrgType = "property_manager" | "contractor";
+
 export default function CompanySignupPage() {
+  const [orgType, setOrgType] = useState<OrgType>("property_manager");
   const [companyName, setCompanyName] = useState("");
   const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("");
@@ -30,6 +33,7 @@ export default function CompanySignupPage() {
           contact_name: contactName,
           phone,
           service_area: serviceArea,
+          org_type: orgType,
         },
       },
     });
@@ -78,11 +82,47 @@ export default function CompanySignupPage() {
 
         <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.2)]">
           <h1 className="font-display text-xl font-semibold text-slate-900">
-            Register your company
+            Register your organisation
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Get set up to receive leads and manage reviews.
+            Get set up on Clean Connect in a couple of minutes.
           </p>
+
+          <div className="mt-6">
+            <span className="mb-2 block text-sm font-medium text-slate-700">
+              What best describes you?
+            </span>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setOrgType("property_manager")}
+                className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
+                  orgType === "property_manager"
+                    ? "border-brand-600 bg-brand-50 text-brand-900"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <span className="block font-medium">Building / property manager</span>
+                <span className="block text-xs text-slate-500">
+                  I manage one or more buildings
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrgType("contractor")}
+                className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
+                  orgType === "contractor"
+                    ? "border-brand-600 bg-brand-50 text-brand-900"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <span className="block font-medium">Contractor / service provider</span>
+                <span className="block text-xs text-slate-500">
+                  Cleaning, gardening, maintenance and more
+                </span>
+              </button>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <Field label="Company name">

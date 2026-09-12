@@ -6,10 +6,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import LogoutButton from "@/app/dashboard/LogoutButton";
 import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
 
-type Tab = "home" | "leads" | "jobs" | "customers" | "team";
+type Tab =
+  | "home"
+  | "buildings"
+  | "leads"
+  | "jobs"
+  | "service-jobs"
+  | "customers"
+  | "team";
 
-const TABS: { key: Tab; label: string; href: string }[] = [
+const PROPERTY_MANAGER_TABS: { key: Tab; label: string; href: string }[] = [
+  { key: "buildings", label: "Buildings", href: "/dashboard/buildings" },
+  { key: "team", label: "Team", href: "/dashboard/team" },
+];
+
+const CONTRACTOR_TABS: { key: Tab; label: string; href: string }[] = [
   { key: "home", label: "Home", href: "/dashboard" },
+  { key: "service-jobs", label: "Service Jobs", href: "/dashboard/service-jobs" },
   { key: "leads", label: "Leads & Quotes", href: "/dashboard/leads" },
   { key: "jobs", label: "Jobs", href: "/dashboard/jobs" },
   { key: "customers", label: "Customers", href: "/dashboard/customers" },
@@ -20,19 +33,23 @@ export function CompanyNav({
   active,
   companyName,
   email,
+  orgType = "contractor",
 }: {
   active: Tab;
   companyName: string;
   email: string;
+  orgType?: "property_manager" | "contractor";
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const initial = companyName.trim().charAt(0).toUpperCase() || "C";
+  const TABS = orgType === "property_manager" ? PROPERTY_MANAGER_TABS : CONTRACTOR_TABS;
+  const homeHref = orgType === "property_manager" ? "/dashboard/buildings" : "/dashboard";
 
   return (
     <header className="sticky top-4 z-40 mx-auto mb-10 w-full max-w-5xl px-4">
       <div className="glass-surface spotlight-border flex items-center justify-between gap-4 rounded-full px-3 py-2">
         <Link
-          href="/dashboard"
+          href={homeHref}
           className="shrink-0 pl-2 font-display text-sm font-semibold text-ink-900"
         >
           CleanConnect

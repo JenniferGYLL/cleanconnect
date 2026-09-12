@@ -23,6 +23,7 @@ export default async function TeamPage() {
       <div className="relative">
         <CompanyNav
           active="team"
+          orgType={company.org_type}
           companyName={company.company_name}
           email={company.email}
         />

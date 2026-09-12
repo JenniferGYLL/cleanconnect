@@ -26,6 +26,10 @@ const DEFAULT_PROFILE: PricingProfileForm = {
 export default async function PricingPage() {
   const { supabase, user, company } = await requireCompany();
 
+  if (company.org_type === "property_manager") {
+    redirect("/dashboard/buildings");
+  }
+
   if (!company.approved) {
     redirect("/dashboard");
   }

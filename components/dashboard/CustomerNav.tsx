@@ -6,12 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import LogoutButton from "@/app/dashboard/LogoutButton";
 import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
 
-export type CustomerTab = "home" | "browse" | "bookings" | "profile";
+export type CustomerTab = "home" | "profile";
 
 const TABS: { key: CustomerTab; label: string; href: string }[] = [
-  { key: "home", label: "Home", href: "/home" },
-  { key: "browse", label: "Browse", href: "/browse" },
-  { key: "bookings", label: "Bookings", href: "/my-bookings" },
+  { key: "home", label: "My Building", href: "/home" },
   { key: "profile", label: "Profile", href: "/profile" },
 ];
 

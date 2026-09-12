@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireCompany } from "@/lib/dashboard/requireCompany";
 import { CompanyNav } from "@/components/dashboard/CompanyNav";
 import { StatusPill } from "@/components/dashboard/StatusPill";
@@ -24,6 +25,13 @@ type Review = {
 
 export default async function DashboardPage() {
   const { supabase, user, company } = await requireCompany();
+
+  // Property management companies live under the new building-centric
+  // product — Buildings is their home, not the old lead/quote inbox
+  // below (which only ever applied to contractors selling cleaning).
+  if (company.org_type === "property_manager") {
+    redirect("/dashboard/buildings");
+  }
 
   if (!company.approved) {
     return (

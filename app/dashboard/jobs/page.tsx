@@ -18,6 +18,10 @@ const REMINDER_WINDOW_DAYS = 3;
 export default async function JobsPage() {
   const { supabase, company } = await requireCompany();
 
+  if (company.org_type === "property_manager") {
+    redirect("/dashboard/buildings");
+  }
+
   if (!company.approved) {
     redirect("/dashboard");
   }

@@ -1024,3 +1024,437 @@ alter table public.leads add column if not exists photo_qc_reviewed_at timestamp
 -- company_pricing_profiles. Confirmed unused — no app code reads or
 -- writes it. Safe to drop.
 drop table if exists public.pricing_rules;
+
+-- =========================================================
+-- 27. Building Service Transparency Platform — core rebuild
+-- =========================================================
+-- Clean Connect is repositioning from a cleaning marketplace into a
+-- building-service evidence platform: property management companies
+-- register buildings, contractors log completed service visits with
+-- photos, and residents/managers see one simple chronological record
+-- per building instead of chasing phone calls and emails.
+--
+-- Existing auth infrastructure is reused rather than rebuilt:
+--   companies -> any organisation: a property manager OR a
+--                contractor/cleaning company, told apart by org_type
+--   customers -> residents
+--   staff     -> contractor staff (a company's own cleaners/technicians)
+-- Nothing existing is dropped — the old marketplace tables (leads,
+-- quotes, pricing profiles, etc.) keep working exactly as before for
+-- any company still using them. This section is purely additive.
+
+alter table public.companies
+add column if not exists org_type text not null default 'contractor'
+check (org_type in ('property_manager', 'contractor'));
+
+-- ---------------------------------------------------------
+-- 27a. Buildings — the centre of the new product
+-- ---------------------------------------------------------
+create table if not exists public.buildings (
+  id uuid primary key default gen_random_uuid (),
+  org_id uuid not null references public.companies (id) on delete cascade,
+  name text not null,
+  address text not null,
+  suburb text,
+  postcode text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.buildings enable row level security;
+
+drop policy if exists "Property managers manage own buildings" on public.buildings;
+create policy "Property managers manage own buildings" on public.buildings for all using (auth.uid () = org_id)
+with check (auth.uid () = org_id);
+
+-- ---------------------------------------------------------
+-- 27b. Building residents — who's authorised to see a building
+-- ---------------------------------------------------------
+-- A resident can be added by email before they even have an account
+-- (customer_id starts null); the moment someone signs up with a
+-- matching email, handle_new_user() below links the row automatically
+-- — no separate "accept invite" step for the resident to complete.
+create table if not exists public.building_residents (
+  id uuid primary key default gen_random_uuid (),
+  building_id uuid not null references public.buildings (id) on delete cascade,
+  customer_id uuid references public.customers (id) on delete cascade,
+  email text not null,
+  added_by uuid not null references public.companies (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists building_residents_building_email_unique
+  on public.building_residents (building_id, lower(email));
+
+alter table public.building_residents enable row level security;
+
+drop policy if exists "Property managers manage building residents" on public.building_residents;
+create policy "Property managers manage building residents" on public.building_residents for all using (
+  exists (
+    select 1 from public.buildings b
+    where b.id = building_residents.building_id and b.org_id = auth.uid ()
+  )
+)
+with check (
+  exists (
+    select 1 from public.buildings b
+    where b.id = building_residents.building_id and b.org_id = auth.uid ()
+  )
+);
+
+drop policy if exists "Residents view own access rows" on public.building_residents;
+create policy "Residents view own access rows" on public.building_residents for select using (auth.uid () = customer_id);
+
+-- Now that building_residents exists, residents can be granted select
+-- access to the buildings they're linked to.
+drop policy if exists "Residents view their buildings" on public.buildings;
+create policy "Residents view their buildings" on public.buildings for select using (
+  exists (
+    select 1 from public.building_residents br
+    where br.building_id = buildings.id and br.customer_id = auth.uid ()
+  )
+);
+
+-- ---------------------------------------------------------
+-- 27c. Jobs — a schedulable unit of work at a building
+-- ---------------------------------------------------------
+-- job_type 'one_off' completes once (status flips to 'completed' on
+-- submission); 'recurring' stays 'open' indefinitely and simply
+-- accumulates a new service_records row every time a contractor visits.
+-- assigned_staff_id mirrors the existing leads.assigned_staff_id
+-- pattern — a company can assign a specific cleaner to a job, or leave
+-- it unassigned so anyone on the contractor's team can pick it up.
+create table if not exists public.jobs (
+  id uuid primary key default gen_random_uuid (),
+  building_id uuid not null references public.buildings (id) on delete cascade,
+  category text not null check (
+    category in (
+      'cleaning', 'gardening', 'lift', 'fire_safety', 'car_park',
+      'maintenance', 'pool', 'landscaping', 'pest_control', 'other'
+    )
+  ),
+  contractor_org_id uuid references public.companies (id) on delete set null,
+  assigned_staff_id uuid references public.staff (id) on delete set null,
+  title text not null,
+  notes text,
+  job_type text not null default 'recurring' check (job_type in ('recurring', 'one_off')),
+  schedule_note text,
+  status text not null default 'open' check (status in ('open', 'completed', 'cancelled')),
+  created_by uuid not null references public.companies (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.jobs enable row level security;
+
+drop policy if exists "Property managers manage jobs at own buildings" on public.jobs;
+create policy "Property managers manage jobs at own buildings" on public.jobs for all using (
+  exists (
+    select 1 from public.buildings b
+    where b.id = jobs.building_id and b.org_id = auth.uid ()
+  )
+)
+with check (
+  exists (
+    select 1 from public.buildings b
+    where b.id = jobs.building_id and b.org_id = auth.uid ()
+  )
+);
+
+drop policy if exists "Contractors view assigned jobs" on public.jobs;
+create policy "Contractors view assigned jobs" on public.jobs for select using (auth.uid () = contractor_org_id);
+
+drop policy if exists "Contractors update assigned jobs" on public.jobs;
+create policy "Contractors update assigned jobs" on public.jobs for update using (auth.uid () = contractor_org_id);
+
+drop policy if exists "Staff view own assigned jobs" on public.jobs;
+create policy "Staff view own assigned jobs" on public.jobs for select using (auth.uid () = assigned_staff_id);
+
+drop policy if exists "Staff update own assigned jobs" on public.jobs;
+create policy "Staff update own assigned jobs" on public.jobs for update using (auth.uid () = assigned_staff_id);
+
+-- Contractors assigned to at least one job at a building can see that
+-- building's basic details (name/address) — nothing about its other
+-- residents, other jobs, or other contractors.
+drop policy if exists "Assigned contractors view buildings" on public.buildings;
+create policy "Assigned contractors view buildings" on public.buildings for select using (
+  exists (
+    select 1 from public.jobs j
+    where j.building_id = buildings.id
+      and (j.contractor_org_id = auth.uid () or j.assigned_staff_id = auth.uid ())
+  )
+);
+
+-- ---------------------------------------------------------
+-- 27d. Service records — the single source of truth
+-- ---------------------------------------------------------
+-- Every "DO -> PROVE" moment becomes exactly one row here. Building
+-- history, the resident feed, the manager dashboard and future reports
+-- all read from this one table instead of duplicating the same
+-- completion data in several places. building_id/category are
+-- denormalised from the job for fast filtering even once a job is
+-- old/archived, and so a one-off token submission (no job row context
+-- beyond the id) still carries everything a viewer needs.
+create table if not exists public.service_records (
+  id uuid primary key default gen_random_uuid (),
+  job_id uuid references public.jobs (id) on delete set null,
+  building_id uuid not null references public.buildings (id) on delete cascade,
+  category text not null check (
+    category in (
+      'cleaning', 'gardening', 'lift', 'fire_safety', 'car_park',
+      'maintenance', 'pool', 'landscaping', 'pest_control', 'other'
+    )
+  ),
+  contractor_org_id uuid references public.companies (id) on delete set null,
+  contractor_name text,
+  submitted_by uuid,
+  notes text,
+  status text not null default 'completed' check (status in ('completed')),
+  visible_to_residents boolean not null default true,
+  completed_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+alter table public.service_records enable row level security;
+
+drop policy if exists "Property managers view own building records" on public.service_records;
+create policy "Property managers view own building records" on public.service_records for select using (
+  exists (
+    select 1 from public.buildings b
+    where b.id = service_records.building_id and b.org_id = auth.uid ()
+  )
+);
+
+drop policy if exists "Contractors manage own submitted records" on public.service_records;
+create policy "Contractors manage own submitted records" on public.service_records for all using (auth.uid () = contractor_org_id)
+with check (auth.uid () = contractor_org_id);
+
+drop policy if exists "Staff manage own submitted records" on public.service_records;
+create policy "Staff manage own submitted records" on public.service_records for all using (auth.uid () = submitted_by)
+with check (auth.uid () = submitted_by);
+
+drop policy if exists "Residents view visible building records" on public.service_records;
+create policy "Residents view visible building records" on public.service_records for select using (
+  visible_to_residents = true
+  and exists (
+    select 1 from public.building_residents br
+    where br.building_id = service_records.building_id and br.customer_id = auth.uid ()
+  )
+);
+
+-- ---------------------------------------------------------
+-- 27e. Service record photos
+-- ---------------------------------------------------------
+create table if not exists public.service_record_photos (
+  id uuid primary key default gen_random_uuid (),
+  service_record_id uuid not null references public.service_records (id) on delete cascade,
+  url text not null,
+  kind text not null default 'general' check (kind in ('before', 'after', 'general')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.service_record_photos enable row level security;
+
+-- Mirrors service_records' own select policies exactly (a subquery
+-- against a table does not re-check that table's RLS for you, so each
+-- legitimate viewer path — property manager, contractor/staff who
+-- submitted it, or an authorised resident when visible) is spelled out
+-- here rather than assumed).
+drop policy if exists "Anyone who can see the record can see its photos" on public.service_record_photos;
+create policy "Anyone who can see the record can see its photos" on public.service_record_photos for select using (
+  exists (
+    select 1
+    from public.service_records sr
+    join public.buildings b on b.id = sr.building_id
+    where sr.id = service_record_photos.service_record_id
+      and (
+        b.org_id = auth.uid ()
+        or sr.contractor_org_id = auth.uid ()
+        or sr.submitted_by = auth.uid ()
+        or (
+          sr.visible_to_residents = true
+          and exists (
+            select 1 from public.building_residents br
+            where br.building_id = sr.building_id and br.customer_id = auth.uid ()
+          )
+        )
+      )
+  )
+);
+
+drop policy if exists "Uploader manages own record photos" on public.service_record_photos;
+create policy "Uploader manages own record photos" on public.service_record_photos for all using (
+  exists (
+    select 1 from public.service_records sr
+    where sr.id = service_record_photos.service_record_id
+      and (sr.contractor_org_id = auth.uid () or sr.submitted_by = auth.uid ())
+  )
+)
+with check (
+  exists (
+    select 1 from public.service_records sr
+    where sr.id = service_record_photos.service_record_id
+      and (sr.contractor_org_id = auth.uid () or sr.submitted_by = auth.uid ())
+  )
+);
+
+-- Storage bucket for service record photos — same public-read,
+-- own-folder-write permission model as the existing job-photos/
+-- lead-photos/company-media buckets. Objects are stored at
+-- "<building_id>/<service_record_id>/<file>" so the RLS policy can
+-- confirm the uploader actually owns that building's job/records
+-- without needing a second lookup table.
+insert into
+  storage.buckets (id, name, public)
+values
+  ('service-record-photos', 'service-record-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Anyone can view service record photos" on storage.objects;
+create policy "Anyone can view service record photos" on storage.objects
+for select using (bucket_id = 'service-record-photos');
+
+-- Objects are staged at "<building_id>/<service_record_id>/<file>", so
+-- the service_records row is always created first (on submit) and the
+-- photos uploaded right after — this checks the uploader actually owns
+-- that specific record, mirroring the precision of the existing
+-- "Staff upload assigned job photos" policy for job-photos.
+drop policy if exists "Contractors upload service record photos" on storage.objects;
+create policy "Contractors upload service record photos" on storage.objects
+for insert
+  to authenticated
+with check (
+  bucket_id = 'service-record-photos'
+  and exists (
+    select 1 from public.service_records sr
+    where sr.building_id::text = (storage.foldername (name)) [1]
+      and sr.id::text = (storage.foldername (name)) [2]
+      and (sr.contractor_org_id = auth.uid () or sr.submitted_by = auth.uid ())
+  )
+);
+
+drop policy if exists "Property managers manage own building photos" on storage.objects;
+create policy "Property managers manage own building photos" on storage.objects
+for all
+  to authenticated using (
+    bucket_id = 'service-record-photos'
+    and exists (
+      select 1 from public.buildings b
+      where b.id::text = (storage.foldername (name)) [1] and b.org_id = auth.uid ()
+    )
+  );
+
+-- ---------------------------------------------------------
+-- 27f. One-off contractor secure job links
+-- ---------------------------------------------------------
+-- Deliberately has NO client-facing RLS policy that grants access by
+-- token — a one-off contractor never signs in at all, so the token is
+-- only ever looked up server-side (via the service role key, in
+-- app/api/one-off-jobs) after checking it's unexpired and unused. That
+-- keeps "guess a token" the only possible attack surface, rather than
+-- also exposing a client-callable table read.
+create table if not exists public.one_off_job_tokens (
+  id uuid primary key default gen_random_uuid (),
+  job_id uuid not null references public.jobs (id) on delete cascade,
+  token text not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table public.one_off_job_tokens enable row level security;
+-- No policies: only the service role (which bypasses RLS) may touch this table.
+
+-- ---------------------------------------------------------
+-- 27g. Auto-link a resident invite the moment that email signs up
+-- ---------------------------------------------------------
+create or replace function public.handle_new_user () returns trigger language plpgsql security definer
+set
+  search_path = public as $$
+begin
+  if new.raw_user_meta_data ->> 'company_name' is not null then
+    insert into public.companies (id, company_name, contact_name, email, phone, service_area, org_type)
+    values (
+      new.id,
+      new.raw_user_meta_data ->> 'company_name',
+      new.raw_user_meta_data ->> 'contact_name',
+      new.email,
+      new.raw_user_meta_data ->> 'phone',
+      new.raw_user_meta_data ->> 'service_area',
+      coalesce(new.raw_user_meta_data ->> 'org_type', 'contractor')
+    );
+  elsif new.raw_user_meta_data ->> 'full_name' is not null then
+    insert into public.customers (id, full_name, email, phone)
+    values (
+      new.id,
+      new.raw_user_meta_data ->> 'full_name',
+      new.email,
+      new.raw_user_meta_data ->> 'phone'
+    );
+
+    -- Backfill any building_residents rows a manager already created for
+    -- this email (invited before this person ever signed up).
+    update public.building_residents
+    set customer_id = new.id
+    where customer_id is null
+      and lower(email) = lower(new.email);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+
+create trigger on_auth_user_created
+after insert on auth.users for each row
+execute function public.handle_new_user ();
+
+-- ---------------------------------------------------------
+-- 27h. Let property managers see the name of their own residents
+-- ---------------------------------------------------------
+-- Without this, "Companies view customers who booked with them" is the
+-- only select policy on customers, so a resident linked purely via
+-- building_residents (never having made a booking) would show up as a
+-- nameless row in the manager's residents list. Scoped tightly: only
+-- customer rows that are linked, via building_residents, to a building
+-- this specific org owns.
+drop policy if exists "Property managers view residents of own buildings" on public.customers;
+create policy "Property managers view residents of own buildings" on public.customers for select using (
+  exists (
+    select 1
+    from public.building_residents br
+    join public.buildings b on b.id = br.building_id
+    where br.customer_id = customers.id and b.org_id = auth.uid ()
+  )
+);
+
+-- ---------------------------------------------------------
+-- 27i. Recreate company_directory to expose org_type
+-- ---------------------------------------------------------
+-- company_directory was defined earlier in this file, before org_type
+-- existed on companies — redefined here (same public grant, same
+-- approved-only filter) purely to add org_type, so a property manager
+-- can filter the directory down to contractor accounts when assigning
+-- a job. Re-running this whole file top to bottom is safe: by the time
+-- execution reaches this point org_type already exists.
+create or replace view public.company_directory as
+select
+  c.id,
+  c.company_name,
+  c.service_area,
+  c.created_at,
+  c.org_type,
+  coalesce(avg(r.rating), 0)::float8 as average_rating,
+  count(r.id)::int as review_count
+from
+  public.companies c
+  left join public.reviews r on r.company_id = c.id
+where
+  c.approved = true
+group by
+  c.id,
+  c.company_name,
+  c.service_area,
+  c.created_at,
+  c.org_type;
+
+grant select on public.company_directory to anon,
+authenticated;

@@ -16,7 +16,8 @@ export default function SignupChooserPage() {
             Create an account
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Are you looking for a cleaning company, or do you run one?
+            Are you a resident, or do you manage or provide services for a
+            building?
           </p>
 
           <div className="mt-6 space-y-3">
@@ -24,13 +25,13 @@ export default function SignupChooserPage() {
               href="/signup/customer"
               className="btn-primary block w-full py-2.5 text-center"
             >
-              I&apos;m a customer
+              I&apos;m a resident
             </Link>
             <Link
               href="/signup/company"
               className="btn-ghost block w-full py-2.5 text-center"
             >
-              I run a cleaning company
+              I manage a building or provide a service
             </Link>
           </div>
         </div>

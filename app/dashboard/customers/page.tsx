@@ -33,6 +33,10 @@ type ReviewRow = {
 export default async function CustomersPage() {
   const { supabase, user, company } = await requireCompany();
 
+  if (company.org_type === "property_manager") {
+    redirect("/dashboard/buildings");
+  }
+
   if (!company.approved) {
     redirect("/dashboard");
   }

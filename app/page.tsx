@@ -7,42 +7,54 @@ import { FadeIn } from "@/components/motion/FadeIn";
 import { SpotlightCard } from "@/components/motion/SpotlightCard";
 import { WaveDivider } from "@/components/motion/WaveDivider";
 
-const steps = [
+const loopSteps = [
   {
     number: "01",
-    title: "Create your profile",
-    copy: "Cleaning companies sign up in minutes and set their service area and specialties.",
+    title: "Do",
+    copy: "A contractor completes a real visit — cleaning, gardening, lift maintenance, fire safety, and more.",
     offset: "",
   },
   {
     number: "02",
-    title: "Get matched with leads",
-    copy: "Customers looking for commercial cleaning, gardening or general cleaning reach out directly.",
-    offset: "sm:mt-12",
+    title: "Prove",
+    copy: "They upload photos and a few notes on the spot. Takes seconds, not a checklist.",
+    offset: "sm:mt-8",
   },
   {
     number: "03",
-    title: "Grow with reviews",
-    copy: "Every completed job builds a public track record that wins the next customer.",
-    offset: "sm:mt-3",
+    title: "See",
+    copy: "The manager and residents see it immediately — no phone calls, no chasing an email.",
+    offset: "sm:mt-16",
+  },
+  {
+    number: "04",
+    title: "Feedback",
+    copy: "Residents mark it Good or flag it Needs Attention — simple, not a star rating.",
+    offset: "sm:mt-8",
+  },
+  {
+    number: "05",
+    title: "Improve",
+    copy: "If something needs fixing, the contractor corrects it and documents the fix too.",
+    offset: "",
   },
 ];
 
 const whyItems = [
   {
-    label: "Live sync",
-    title: "Reviews land the moment they're submitted",
-    copy: "No refreshing, no polling your inbox — a new review or lead appears on your dashboard in real time, with a quiet notification instead of a page reload.",
+    label: "Evidence, not promises",
+    title: "Every visit becomes a permanent record",
+    copy: "Photos and notes are filed the moment a job is done — automatically added to the building's history, the manager's dashboard and the resident feed. Nothing is re-entered twice.",
   },
   {
-    label: "Visual proof",
-    title: "Before-and-after photos, attached to the job",
-    copy: "Upload a before and after shot straight from the lead card. It becomes part of your track record, not a separate folder you forget to send anyone.",
+    label: "Built for everyone",
+    title: "No training required, for anyone",
+    copy: "A resident opens their building and taps a tile. A contractor opens a job, takes a photo, and submits. A manager opens a dashboard and sees what happened today — that's the whole learning curve.",
   },
   {
-    label: "Compounding trust",
-    title: "Every completed job strengthens the next quote",
-    copy: "Your review history stays attached to your profile, so the work you've already done keeps working for you on the next lead.",
+    label: "One-off contractors welcome",
+    title: "No account needed to log a job",
+    copy: "A one-time contractor gets a secure link by text or email, opens it in any browser, adds photos and notes, and submits. No sign-up, no app.",
   },
 ];
 
@@ -83,26 +95,17 @@ function HeroMockup() {
         <SpotlightCard className="rounded-2xl p-5">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 12.5l5 5L20 6.5"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              🧹
             </span>
             <div>
               <p className="text-sm font-semibold text-ink-900">
-                New review — Priya K.
+                Common area cleaning — Level 3
               </p>
-              <p className="text-xs text-amber-500">★★★★★</p>
+              <p className="text-xs text-ink-700/50">Logged 12 minutes ago</p>
             </div>
           </div>
           <p className="mt-3 text-sm text-ink-700/70">
-            &ldquo;Showed up on time and the office looked better than it has
-            in months.&rdquo;
+            &ldquo;Bins emptied, lobby glass cleaned, mopped throughout.&rdquo;
           </p>
         </SpotlightCard>
       </motion.div>
@@ -115,15 +118,13 @@ function HeroMockup() {
       >
         <SpotlightCard className="rounded-2xl p-4">
           <p className="text-[11px] font-medium uppercase tracking-widest text-brand-700">
-            Job #204 — office fit-out
+            Resident feedback
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 py-6 text-center text-[10px] font-medium uppercase tracking-wide text-slate-500">
-              Before
-            </div>
-            <div className="rounded-lg bg-gradient-to-br from-brand-200 to-accent-300 py-6 text-center text-[10px] font-medium uppercase tracking-wide text-brand-900">
-              After
-            </div>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
+              👍 Good
+            </span>
+            <span className="text-[11px] text-ink-700/50">from 2 residents</span>
           </div>
         </SpotlightCard>
       </motion.div>
@@ -157,42 +158,41 @@ export default function HomePage() {
             <FadeIn>
               <span className="inline-flex items-center gap-2 rounded-full border border-brand-900/10 bg-white/80 px-4 py-1.5 text-xs font-medium tracking-wide text-ink-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-                Cleaning, done properly, across Melbourne
+                A building service transparency platform
               </span>
             </FadeIn>
 
             <FadeIn delay={0.08}>
               <h1 className="mt-8 max-w-xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-ink-900 sm:text-6xl">
-                Tell us what you need.{" "}
+                See what has been{" "}
                 <span className="bg-gradient-to-r from-brand-600 to-accent-600 bg-clip-text text-transparent">
-                  We&apos;ll do the rest.
+                  done in your building.
                 </span>
               </h1>
             </FadeIn>
 
             <FadeIn delay={0.16}>
               <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-700/70">
-                Describe the clean you need — even out loud — and we&apos;ll
-                match you with a trusted local company, from a quick
-                end-of-lease to regular office cleaning. Running a cleaning
-                business? Get a steady stream of leads instead of chasing
-                quotes.
+                No chasing. No guessing. Every cleaning, garden visit, lift
+                check and fire inspection gets logged with a photo the
+                moment it happens — so managers, residents and contractors
+                all see the same simple record.
               </p>
             </FadeIn>
 
             <FadeIn delay={0.24}>
               <div className="mt-10 flex flex-wrap items-center gap-4">
                 <Link
-                  href="/browse"
+                  href="/signup/company"
                   className="btn-primary px-7 py-3 text-[15px]"
                 >
-                  Request a Cleaning
+                  For Building Managers
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/signup/customer"
                   className="btn-ghost px-7 py-3 text-[15px]"
                 >
-                  Join as a Cleaning Business
+                  I&apos;m a Resident
                 </Link>
               </div>
             </FadeIn>
@@ -204,51 +204,74 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Two paths */}
+      {/* Three paths */}
       <section className="relative bg-white py-24">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="grid gap-6 lg:grid-cols-5">
-            <FadeIn className="lg:col-span-2">
-              <SpotlightCard className="group h-full rounded-2xl p-8 sm:mt-10">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <FadeIn>
+              <SpotlightCard className="group h-full rounded-2xl p-8">
                 <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
-                  For customers
+                  For property managers
                 </span>
                 <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
-                  Tell us what you need. We&apos;ll do the rest.
+                  See, don&apos;t search
                 </h3>
                 <p className="mt-3 text-ink-700/70">
-                  Browse verified cleaning companies, compare real reviews and
-                  request a booking in minutes — even by voice.
+                  Every building you manage, every service, every completed
+                  visit — one dashboard, filed automatically.
                 </p>
                 <div className="mt-8 flex items-end">
                   <Link
-                    href="/browse"
+                    href="/signup/company"
                     className="inline-flex items-center gap-1 text-sm font-semibold text-ink-900 transition group-hover:gap-2"
                   >
-                    Browse companies <span aria-hidden>→</span>
+                    Register your buildings <span aria-hidden>→</span>
                   </Link>
                 </div>
               </SpotlightCard>
             </FadeIn>
 
-            <FadeIn delay={0.1} className="lg:col-span-3">
-              <SpotlightCard className="group h-full rounded-2xl p-8 sm:p-10">
+            <FadeIn delay={0.08}>
+              <SpotlightCard className="group h-full rounded-2xl p-8">
                 <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
-                  For cleaning companies
+                  For contractors
                 </span>
-                <h3 className="mt-4 font-display text-3xl font-semibold text-ink-900">
-                  Turn visibility into bookings
+                <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
+                  Open job, snap photos, submit
                 </h3>
-                <p className="mt-3 max-w-md text-ink-700/70">
-                  Register your business, then log in to see customer leads
-                  and reviews arrive on your dashboard as they happen.
+                <p className="mt-3 text-ink-700/70">
+                  No long checklists. No account needed for a one-off job —
+                  just a secure link sent straight to your phone.
                 </p>
                 <div className="mt-8 flex items-end">
                   <Link
-                    href="/signup"
+                    href="/signup/company"
                     className="inline-flex items-center gap-1 text-sm font-semibold text-ink-900 transition group-hover:gap-2"
                   >
-                    Get started <span aria-hidden>→</span>
+                    Register as a contractor <span aria-hidden>→</span>
+                  </Link>
+                </div>
+              </SpotlightCard>
+            </FadeIn>
+
+            <FadeIn delay={0.16}>
+              <SpotlightCard className="group h-full rounded-2xl p-8">
+                <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
+                  For residents
+                </span>
+                <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
+                  My Building, nothing else
+                </h3>
+                <p className="mt-3 text-ink-700/70">
+                  Tap a service, see what was actually done, and say Good or
+                  Needs Attention. That&apos;s the whole app.
+                </p>
+                <div className="mt-8 flex items-end">
+                  <Link
+                    href="/signup/customer"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-ink-900 transition group-hover:gap-2"
+                  >
+                    Create your account <span aria-hidden>→</span>
                   </Link>
                 </div>
               </SpotlightCard>
@@ -257,7 +280,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How it works */}
+      {/* The loop */}
       <section id="how-it-works" className="relative bg-foam-100 py-28">
         <div className="mx-auto max-w-6xl px-6">
           <FadeIn>
@@ -265,11 +288,11 @@ export default function HomePage() {
               How it works
             </span>
             <h2 className="mt-4 max-w-lg font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">
-              Built to get you working, not waiting.
+              Do. Prove. See. Feedback. Improve.
             </h2>
           </FadeIn>
 
-          <div className="relative mt-16 grid gap-10 sm:grid-cols-3">
+          <div className="relative mt-16 grid gap-10 sm:grid-cols-5">
             <svg
               aria-hidden
               className="pointer-events-none absolute left-0 right-0 top-6 hidden w-full sm:block"
@@ -287,8 +310,8 @@ export default function HomePage() {
                 fill="none"
               />
             </svg>
-            {steps.map((step, i) => (
-              <FadeIn key={step.number} delay={i * 0.1} className={step.offset}>
+            {loopSteps.map((step, i) => (
+              <FadeIn key={step.number} delay={i * 0.08} className={step.offset}>
                 <div className="relative">
                   <div className="relative z-10 inline-flex h-12 w-12 items-center justify-center rounded-full border border-brand-900/10 bg-white font-display text-sm font-semibold text-ink-900 shadow-tint-sm">
                     {step.number}
@@ -296,7 +319,7 @@ export default function HomePage() {
                   <h3 className="mt-5 font-display text-lg font-semibold text-ink-900">
                     {step.title}
                   </h3>
-                  <p className="mt-2 text-ink-700/70">{step.copy}</p>
+                  <p className="mt-2 text-sm text-ink-700/70">{step.copy}</p>
                 </div>
               </FadeIn>
             ))}
@@ -319,7 +342,7 @@ export default function HomePage() {
               Why CleanConnect
             </span>
             <h2 className="mt-4 max-w-lg font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Details that make the dashboard worth opening.
+              A simple front end. A record-keeping backend that never forgets.
             </h2>
           </FadeIn>
 

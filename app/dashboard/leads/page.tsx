@@ -12,6 +12,10 @@ type QuoteWithLead = QuoteRow & { lead_id: string };
 export default async function LeadsPage() {
   const { supabase, user, company } = await requireCompany();
 
+  if (company.org_type === "property_manager") {
+    redirect("/dashboard/buildings");
+  }
+
   if (!company.approved) {
     redirect("/dashboard");
   }

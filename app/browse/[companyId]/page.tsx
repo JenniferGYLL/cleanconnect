@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SiteNav } from "@/components/layout/SiteNav";
-import { CustomerNav } from "@/components/dashboard/CustomerNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { SpotlightCard } from "@/components/motion/SpotlightCard";
 import { BookingForm } from "@/components/browse/BookingForm";
@@ -22,6 +21,7 @@ export default async function CompanyProfilePage({
     .from("company_directory")
     .select("*")
     .eq("id", params.companyId)
+    .eq("org_type", "contractor")
     .maybeSingle();
 
   if (!company) {
@@ -60,17 +60,7 @@ export default async function CompanyProfilePage({
     <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24">
       <div className="bg-mesh-1 pointer-events-none absolute inset-0 opacity-60" />
       <div className="relative">
-        {customerId && customerName ? (
-          <div className="mx-auto max-w-5xl px-6 pt-6">
-            <CustomerNav
-              active="browse"
-              customerName={customerName}
-              email={user?.email ?? ""}
-            />
-          </div>
-        ) : (
-          <SiteNav />
-        )}
+        <SiteNav />
 
         <div className="mx-auto max-w-5xl px-6 pt-12">
           {/* Header */}

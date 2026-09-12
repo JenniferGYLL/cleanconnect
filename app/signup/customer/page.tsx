@@ -48,8 +48,9 @@ export default function CustomerSignupPage() {
             You&apos;re almost in
           </h1>
           <p className="mt-3 text-slate-500">
-            Check your email to verify your address, then sign in to browse
-            cleaning companies and request a booking.
+            Check your email to verify your address, then sign in. If your
+            building manager has already added you, your building will be
+            waiting for you.
           </p>
           <Link
             href="/login"
@@ -74,10 +75,10 @@ export default function CustomerSignupPage() {
 
         <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.2)]">
           <h1 className="font-display text-xl font-semibold text-slate-900">
-            Create your customer account
+            Create your resident account
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Browse cleaning companies and book with confidence.
+            See what&apos;s actually been done in your building.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">

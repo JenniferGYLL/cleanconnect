@@ -1,7 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CustomerBookingsList from "@/components/dashboard/CustomerBookingsList";
-import { CustomerNav } from "@/components/dashboard/CustomerNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 
 type BookingQuote = {
@@ -98,18 +98,25 @@ export default async function MyBookingsPage() {
     <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24">
       <div className="bg-mesh-1 pointer-events-none absolute inset-0 opacity-60" />
       <div className="relative">
-        <div className="mx-auto max-w-3xl px-4 pt-6">
-          <CustomerNav active="bookings" customerName={customer.full_name} email={user.email ?? ""} />
-        </div>
-
-        <div className="mx-auto max-w-3xl px-6">
+        <div className="mx-auto max-w-3xl px-6 pt-6">
           <FadeIn>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
+            <Link
+              href="/home"
+              className="text-sm font-medium text-ink-700/60 hover:text-ink-900"
+            >
+              ← My Building
+            </Link>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-gold-500">
               {customer.full_name}
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
-              My bookings
+              My cleaning bookings
             </h1>
+            <p className="mt-1 text-sm text-ink-700/60">
+              Any residential cleaning you&apos;ve requested through
+              CleanConnect directly, separate from your building&apos;s
+              service history.
+            </p>
           </FadeIn>
 
           <div className="mt-6">
