@@ -6,10 +6,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import LogoutButton from "@/app/dashboard/LogoutButton";
 import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
 
+export type CustomerTab = "home" | "browse" | "bookings" | "profile";
+
+const TABS: { key: CustomerTab; label: string; href: string }[] = [
+  { key: "home", label: "Home", href: "/home" },
+  { key: "browse", label: "Browse", href: "/browse" },
+  { key: "bookings", label: "Bookings", href: "/my-bookings" },
+  { key: "profile", label: "Profile", href: "/profile" },
+];
+
 export function CustomerNav({
+  active,
   customerName,
   email,
 }: {
+  active: CustomerTab;
   customerName: string;
   email: string;
 }) {
@@ -20,18 +31,27 @@ export function CustomerNav({
     <header className="sticky top-4 z-40 mx-auto mb-10 w-full max-w-3xl px-4">
       <div className="glass-surface spotlight-border flex items-center justify-between gap-4 rounded-full px-3 py-2">
         <Link
-          href="/my-bookings"
+          href="/home"
           className="shrink-0 pl-2 font-display text-sm font-semibold text-ink-900"
         >
           CleanConnect
         </Link>
 
-        <Link
-          href="/browse"
-          className="hidden text-sm font-medium text-ink-700 hover:text-ink-900 sm:block"
-        >
-          Browse companies
-        </Link>
+        <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
+          {TABS.map((tab) => (
+            <Link
+              key={tab.key}
+              href={tab.href}
+              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+                active === tab.key
+                  ? "bg-ink-900 text-white shadow-tint-sm"
+                  : "text-ink-700 hover:bg-white/70"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="hidden shrink-0 items-center gap-3 pr-1 sm:flex">
           <NotificationOptIn />
@@ -69,13 +89,6 @@ export function CustomerNav({
                     </p>
                     <p className="truncate text-xs text-ink-700/60">{email}</p>
                   </div>
-                  <Link
-                    href="/browse"
-                    onClick={() => setMenuOpen(false)}
-                    className="block rounded-lg px-3 py-2 text-ink-800 hover:bg-white/70 sm:hidden"
-                  >
-                    Browse companies
-                  </Link>
                   <div className="px-3 py-2 text-xs text-ink-700/60 sm:hidden">
                     <NotificationOptIn />
                   </div>

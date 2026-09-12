@@ -99,7 +99,7 @@ export default async function MyBookingsPage() {
       <div className="bg-mesh-1 pointer-events-none absolute inset-0 opacity-60" />
       <div className="relative">
         <div className="mx-auto max-w-3xl px-4 pt-6">
-          <CustomerNav customerName={customer.full_name} email={user.email ?? ""} />
+          <CustomerNav active="bookings" customerName={customer.full_name} email={user.email ?? ""} />
         </div>
 
         <div className="mx-auto max-w-3xl px-6">

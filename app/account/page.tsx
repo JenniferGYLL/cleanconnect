@@ -30,7 +30,7 @@ export default async function AccountRedirectPage() {
     .maybeSingle();
 
   if (customer) {
-    redirect("/my-bookings");
+    redirect("/home");
   }
 
   const { data: staff } = await supabase

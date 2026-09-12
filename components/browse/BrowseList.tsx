@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CompanyCard, type DirectoryCompany } from "@/components/browse/CompanyCard";
 
 type SortKey = "rated" | "reviewed" | "fastest" | "newest";
@@ -20,7 +21,11 @@ const MIN_RATING_OPTIONS = [
 ];
 
 export function BrowseList({ companies }: { companies: DirectoryCompany[] }) {
-  const [query, setQuery] = useState("");
+  // Lets a link like /browse?q=Garden (from the customer Home page's
+  // quick category shortcuts) land with the search box already filled in,
+  // without needing a separate structured "category" filter.
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [minRating, setMinRating] = useState(0);
   const [sort, setSort] = useState<SortKey>("rated");
