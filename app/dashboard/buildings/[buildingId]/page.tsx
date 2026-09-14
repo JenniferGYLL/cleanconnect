@@ -62,7 +62,7 @@ export default async function BuildingDetailPage({
     notFound();
   }
 
-  const [{ data: residentRows }, { data: recordRows }, { data: jobRows }] =
+  const [{ data: residentRows }, { data: recordRows }, { data: jobRows }, { data: flaggedRows }] =
     await Promise.all([
       supabase
         .from("building_residents")
@@ -80,6 +80,12 @@ export default async function BuildingDetailPage({
         .select("id, category, title, job_type, status, contractor_org_id, companies(company_name)")
         .eq("building_id", building.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("service_records")
+        .select("id, category, contractor_name, completed_at")
+        .eq("building_id", building.id)
+        .eq("issue_status", "flagged")
+        .order("completed_at", { ascending: false }),
     ]);
 
   const residents: ResidentRow[] = (residentRows ?? []).map((r) => {
@@ -113,6 +119,12 @@ export default async function BuildingDetailPage({
   }
 
   const openJobs = jobs.filter((j) => j.status === "open");
+  const flagged = (flaggedRows ?? []) as {
+    id: string;
+    category: ServiceCategory;
+    contractor_name: string | null;
+    completed_at: string;
+  }[];
 
   return (
     <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24 pt-6">
@@ -143,16 +155,24 @@ export default async function BuildingDetailPage({
             </p>
           </FadeIn>
 
-          <FadeIn delay={0.05} className="mt-8 flex items-center justify-between">
+          <FadeIn delay={0.05} className="mt-8 flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-gold-500">
               Services
             </p>
-            <Link
-              href={`/dashboard/buildings/${building.id}/jobs/new`}
-              className="btn-primary px-4 py-2 text-sm"
-            >
-              + Create job
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/dashboard/buildings/${building.id}/report`}
+                className="rounded-full border border-ink-900/15 px-4 py-2 text-sm font-medium text-ink-700 hover:border-ink-900/30"
+              >
+                Building report
+              </Link>
+              <Link
+                href={`/dashboard/buildings/${building.id}/jobs/new`}
+                className="btn-primary px-4 py-2 text-sm"
+              >
+                + Create job
+              </Link>
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.08} className="mt-3">
@@ -174,6 +194,30 @@ export default async function BuildingDetailPage({
               ))}
             </div>
           </FadeIn>
+
+          {flagged.length > 0 && (
+            <FadeIn delay={0.09} className="mt-8">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-600">
+                Needs attention
+              </p>
+              <ul className="divide-y divide-amber-200/60 overflow-hidden rounded-2xl bg-amber-50">
+                {flagged.map((record) => (
+                  <li key={record.id} className="px-5 py-3">
+                    <Link
+                      href={`/dashboard/buildings/${building.id}/${record.category}`}
+                      className="flex items-center justify-between gap-3 text-sm font-medium text-amber-900 hover:underline"
+                    >
+                      <span>
+                        {CATEGORY_LABEL[record.category]}
+                        {record.contractor_name ? ` · ${record.contractor_name}` : ""}
+                      </span>
+                      <span className="shrink-0 text-xs">{timeAgo(record.completed_at)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </FadeIn>
+          )}
 
           {openJobs.length > 0 && (
             <FadeIn delay={0.1} className="mt-8">

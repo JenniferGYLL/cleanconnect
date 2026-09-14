@@ -11,6 +11,7 @@ type RawRecord = {
   contractor_name: string | null;
   notes: string | null;
   completed_at: string;
+  issue_status: "none" | "flagged" | "resolved";
 };
 
 function timeAgo(iso: string): string {
@@ -67,7 +68,7 @@ export default async function ResidentBuildingPage({
 
   const { data: recordRows } = await supabase
     .from("service_records")
-    .select("id, category, contractor_name, notes, completed_at")
+    .select("id, category, contractor_name, notes, completed_at, issue_status")
     .eq("building_id", building.id)
     .eq("visible_to_residents", true)
     .order("completed_at", { ascending: false })
@@ -140,6 +141,16 @@ export default async function ResidentBuildingPage({
                         {timeAgo(record.completed_at)}
                       </span>
                     </div>
+                    {record.issue_status === "flagged" && (
+                      <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                        Needs attention
+                      </span>
+                    )}
+                    {record.issue_status === "resolved" && (
+                      <span className="mt-1 inline-flex rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
+                        Resolved
+                      </span>
+                    )}
                     {record.contractor_name && (
                       <p className="mt-1 text-xs text-ink-700/50">{record.contractor_name}</p>
                     )}

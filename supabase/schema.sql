@@ -1458,3 +1458,120 @@ group by
 
 grant select on public.company_directory to anon,
 authenticated;
+
+-- =========================================================
+-- 28. Resident feedback + the Needs Attention -> resolved loop
+-- =========================================================
+-- Deliberately NOT star ratings: a resident can 👍 like a visit, mark
+-- it Good or Needs Attention, and leave a short optional comment that
+-- can be shown to other residents anonymously. "Anonymous" only ever
+-- means anonymous to OTHER residents/the manager's displayed name —
+-- resident_id is always stored so the platform can trace abuse; the
+-- app layer is what hides the name when is_anonymous = true.
+
+-- ---------------------------------------------------------
+-- 28a. Let contractors document a fix, and flag/resolve the issue
+-- ---------------------------------------------------------
+alter table public.service_records
+add column if not exists resolves_record_id uuid references public.service_records (id) on delete set null;
+
+alter table public.service_records
+add column if not exists issue_status text not null default 'none' check (issue_status in ('none', 'flagged', 'resolved'));
+
+-- ---------------------------------------------------------
+-- 28b. service_record_feedback
+-- ---------------------------------------------------------
+create table if not exists public.service_record_feedback (
+  id uuid primary key default gen_random_uuid (),
+  service_record_id uuid not null references public.service_records (id) on delete cascade,
+  resident_id uuid not null references public.customers (id) on delete cascade,
+  liked boolean not null default false,
+  status text check (status in ('good', 'needs_attention')),
+  comment text,
+  is_anonymous boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists service_record_feedback_unique
+  on public.service_record_feedback (service_record_id, resident_id);
+
+alter table public.service_record_feedback enable row level security;
+
+-- Same visibility rule as service_record_photos: whoever can see the
+-- underlying record can see the feedback on it. resident_id always
+-- comes through in the row — the app hides the name for anonymous
+-- feedback, this policy does not need to.
+drop policy if exists "Anyone who can see the record can see its feedback" on public.service_record_feedback;
+create policy "Anyone who can see the record can see its feedback" on public.service_record_feedback for select using (
+  exists (
+    select 1
+    from public.service_records sr
+    join public.buildings b on b.id = sr.building_id
+    where sr.id = service_record_feedback.service_record_id
+      and (
+        b.org_id = auth.uid ()
+        or sr.contractor_org_id = auth.uid ()
+        or sr.submitted_by = auth.uid ()
+        or (
+          sr.visible_to_residents = true
+          and exists (
+            select 1 from public.building_residents br
+            where br.building_id = sr.building_id and br.customer_id = auth.uid ()
+          )
+        )
+      )
+  )
+);
+
+drop policy if exists "Residents manage own feedback" on public.service_record_feedback;
+create policy "Residents manage own feedback" on public.service_record_feedback for all using (
+  auth.uid () = resident_id
+  and exists (
+    select 1 from public.service_records sr
+    join public.building_residents br on br.building_id = sr.building_id
+    where sr.id = service_record_feedback.service_record_id
+      and sr.visible_to_residents = true
+      and br.customer_id = auth.uid ()
+  )
+)
+with check (
+  auth.uid () = resident_id
+  and exists (
+    select 1 from public.service_records sr
+    join public.building_residents br on br.building_id = sr.building_id
+    where sr.id = service_record_feedback.service_record_id
+      and sr.visible_to_residents = true
+      and br.customer_id = auth.uid ()
+  )
+);
+
+-- ---------------------------------------------------------
+-- 28c. Keep service_records.issue_status in sync automatically
+-- ---------------------------------------------------------
+-- Residents have no direct update access to service_records (by
+-- design — it's the contractor/manager's record, not the resident's),
+-- so flagging "Needs Attention" has to happen through a trigger rather
+-- than a client-side update. Marking something resolved instead
+-- happens explicitly in application code, the moment a contractor
+-- submits a corrective visit with resolves_record_id set — see
+-- SubmitServiceRecordForm.
+create or replace function public.flag_needs_attention () returns trigger language plpgsql security definer
+set
+  search_path = public as $$
+begin
+  if new.status = 'needs_attention' then
+    update public.service_records
+    set issue_status = 'flagged'
+    where id = new.service_record_id
+      and issue_status <> 'resolved';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_feedback_flag_needs_attention on public.service_record_feedback;
+
+create trigger on_feedback_flag_needs_attention
+after insert or update on public.service_record_feedback for each row
+execute function public.flag_needs_attention ();

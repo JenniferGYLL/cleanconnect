@@ -23,14 +23,21 @@ export default async function ServiceJobsPage() {
     redirect("/dashboard/buildings");
   }
 
-  const { data } = await supabase
-    .from("jobs")
-    .select(
-      "id, category, title, notes, job_type, schedule_note, status, buildings(id, name, address)"
-    )
-    .eq("contractor_org_id", company.id)
-    .eq("status", "open")
-    .order("created_at", { ascending: false });
+  const [{ data }, { count: needsAttentionCount }] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select(
+        "id, category, title, notes, job_type, schedule_note, status, buildings(id, name, address)"
+      )
+      .eq("contractor_org_id", company.id)
+      .eq("status", "open")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("service_records")
+      .select("id", { count: "exact", head: true })
+      .eq("contractor_org_id", company.id)
+      .eq("issue_status", "flagged"),
+  ]);
 
   const jobs = (data ?? []).map((j) => {
     const row = j as unknown as JobRow;
@@ -58,6 +65,21 @@ export default async function ServiceJobsPage() {
               Open a job, take photos, submit
             </h1>
           </FadeIn>
+
+          {!!needsAttentionCount && needsAttentionCount > 0 && (
+            <FadeIn delay={0.02} className="mt-4">
+              <Link
+                href="/dashboard/service-jobs/needs-attention"
+                className="flex items-center justify-between rounded-2xl bg-amber-100 px-5 py-3 text-sm font-medium text-amber-900 transition hover:bg-amber-200"
+              >
+                <span>
+                  {needsAttentionCount} visit{needsAttentionCount === 1 ? "" : "s"} flagged
+                  Needs Attention
+                </span>
+                <span aria-hidden>→</span>
+              </Link>
+            </FadeIn>
+          )}
 
           <FadeIn delay={0.05} className="mt-8">
             {jobs.length === 0 ? (

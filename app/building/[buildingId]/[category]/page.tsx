@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CustomerNav } from "@/components/dashboard/CustomerNav";
 import { FadeIn } from "@/components/motion/FadeIn";
+import { FeedbackWidget, type OwnFeedback } from "@/components/resident/FeedbackWidget";
 import { CATEGORY_LABEL, CATEGORY_EMOJI, isServiceCategory } from "@/lib/buildings/categories";
 
 type RecordPhoto = { id: string; url: string };
@@ -11,7 +12,18 @@ type ServiceRecordWithPhotos = {
   contractor_name: string | null;
   notes: string | null;
   completed_at: string;
+  issue_status: "none" | "flagged" | "resolved";
   service_record_photos: RecordPhoto[];
+};
+
+type FeedbackRow = {
+  id: string;
+  service_record_id: string;
+  resident_id: string;
+  liked: boolean;
+  status: "good" | "needs_attention" | null;
+  comment: string | null;
+  is_anonymous: boolean;
 };
 
 export default async function ResidentCategoryPage({
@@ -63,13 +75,31 @@ export default async function ResidentCategoryPage({
 
   const { data } = await supabase
     .from("service_records")
-    .select("id, contractor_name, notes, completed_at, service_record_photos(id, url)")
+    .select(
+      "id, contractor_name, notes, completed_at, issue_status, service_record_photos(id, url)"
+    )
     .eq("building_id", building.id)
     .eq("category", category)
     .eq("visible_to_residents", true)
     .order("completed_at", { ascending: false });
 
   const records = (data ?? []) as unknown as ServiceRecordWithPhotos[];
+
+  const recordIds = records.map((r) => r.id);
+  let feedbackByRecord = new Map<string, FeedbackRow[]>();
+  if (recordIds.length > 0) {
+    const { data: feedbackRows } = await supabase
+      .from("service_record_feedback")
+      .select("id, service_record_id, resident_id, liked, status, comment, is_anonymous")
+      .in("service_record_id", recordIds);
+
+    feedbackByRecord = new Map();
+    for (const row of (feedbackRows ?? []) as FeedbackRow[]) {
+      const list = feedbackByRecord.get(row.service_record_id) ?? [];
+      list.push(row);
+      feedbackByRecord.set(row.service_record_id, list);
+    }
+  }
 
   return (
     <main className="bg-grain relative min-h-dvh overflow-hidden bg-foam-50 pb-24">
@@ -99,39 +129,85 @@ export default async function ResidentCategoryPage({
               </div>
             ) : (
               <ul className="space-y-4">
-                {records.map((record) => (
-                  <li key={record.id} className="glass-surface rounded-2xl p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium text-ink-900">
-                        {record.contractor_name ?? "Contractor"}
-                      </span>
-                      <span className="shrink-0 text-xs text-ink-700/50">
-                        {new Date(record.completed_at).toLocaleString("en-AU", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    {record.notes && (
-                      <p className="mt-2 text-sm text-ink-700/70">{record.notes}</p>
-                    )}
-                    {record.service_record_photos.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {record.service_record_photos.map((photo) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={photo.id}
-                            src={photo.url}
-                            alt="Service record photo"
-                            className="h-20 w-20 rounded-lg object-cover"
-                          />
-                        ))}
+                {records.map((record) => {
+                  const feedback = feedbackByRecord.get(record.id) ?? [];
+                  const own = feedback.find((f) => f.resident_id === user.id) ?? null;
+                  const comments = feedback.filter((f) => f.comment);
+
+                  return (
+                    <li key={record.id} className="glass-surface rounded-2xl p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium text-ink-900">
+                          {record.contractor_name ?? "Contractor"}
+                        </span>
+                        <span className="shrink-0 text-xs text-ink-700/50">
+                          {new Date(record.completed_at).toLocaleString("en-AU", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
-                    )}
-                  </li>
-                ))}
+                      {record.issue_status === "flagged" && (
+                        <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                          Needs Attention — being looked at
+                        </span>
+                      )}
+                      {record.issue_status === "resolved" && (
+                        <span className="mt-2 inline-flex rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                          Issue resolved
+                        </span>
+                      )}
+                      {record.notes && (
+                        <p className="mt-2 text-sm text-ink-700/70">{record.notes}</p>
+                      )}
+                      {record.service_record_photos.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {record.service_record_photos.map((photo) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={photo.id}
+                              src={photo.url}
+                              alt="Service record photo"
+                              className="h-20 w-20 rounded-lg object-cover"
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      <FeedbackWidget
+                        serviceRecordId={record.id}
+                        residentId={user.id}
+                        initialOwn={own as OwnFeedback | null}
+                        likeCount={feedback.filter((f) => f.liked).length}
+                        goodCount={feedback.filter((f) => f.status === "good").length}
+                        needsAttentionCount={
+                          feedback.filter((f) => f.status === "needs_attention").length
+                        }
+                        commentCount={comments.length}
+                      />
+
+                      {comments.length > 0 && (
+                        <ul className="mt-3 space-y-1.5 border-t border-ink-900/5 pt-3">
+                          {comments.map((c) => (
+                            <li key={c.id} className="text-sm text-ink-700/70">
+                              <span className="font-medium text-ink-800">
+                                {c.resident_id === user.id
+                                  ? "You"
+                                  : c.is_anonymous
+                                  ? "Anonymous resident"
+                                  : "A resident"}
+                                :
+                              </span>{" "}
+                              {c.comment}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </FadeIn>

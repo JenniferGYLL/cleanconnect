@@ -14,15 +14,17 @@ export function SubmitServiceRecordForm({
   submittedBy,
   contractorName,
   backHref,
+  resolvesRecordId,
 }: {
-  jobId: string;
+  jobId: string | null;
   buildingId: string;
   category: ServiceCategory;
-  jobType: "recurring" | "one_off";
+  jobType: "recurring" | "one_off" | null;
   contractorOrgId: string | null;
   submittedBy: string | null;
   contractorName: string;
   backHref: string;
+  resolvesRecordId?: string;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +60,7 @@ export function SubmitServiceRecordForm({
         contractor_name: contractorName || null,
         submitted_by: submittedBy,
         notes: notes || null,
+        resolves_record_id: resolvesRecordId ?? null,
       })
       .select("id")
       .single();
@@ -94,8 +97,15 @@ export function SubmitServiceRecordForm({
       });
     }
 
-    if (jobType === "one_off") {
+    if (jobType === "one_off" && jobId) {
       await supabase.from("jobs").update({ status: "completed" }).eq("id", jobId);
+    }
+
+    if (resolvesRecordId) {
+      await supabase
+        .from("service_records")
+        .update({ issue_status: "resolved" })
+        .eq("id", resolvesRecordId);
     }
 
     setSubmitting(false);
@@ -110,8 +120,9 @@ export function SubmitServiceRecordForm({
           Filed automatically
         </p>
         <p className="mt-1 text-sm text-ink-700/60">
-          This visit is now in the building&apos;s history — nothing else to
-          do.
+          {resolvesRecordId
+            ? "The earlier issue is now marked resolved, with this fix documented alongside it."
+            : "This visit is now in the building's history — nothing else to do."}
         </p>
         <button
           type="button"
