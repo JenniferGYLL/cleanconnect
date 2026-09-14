@@ -6,14 +6,14 @@ import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { SpotlightCard } from "@/components/motion/SpotlightCard";
-import { useClickHalo } from "@/components/motion/ClickHalo";
+import { DotField } from "@/components/motion/DotField";
+import { DotLogo } from "@/components/brand/DotLogo";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const { field: haloField, onClick: onHaloClick } = useClickHalo();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,29 +39,26 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main
-      onClick={onHaloClick}
-      className="bg-grain relative flex min-h-dvh items-center justify-center overflow-hidden bg-foam-50 px-6 py-16"
-    >
+    <main className="bg-grain relative flex min-h-dvh items-center justify-center overflow-hidden bg-foam-50 px-6 py-16">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-mesh-1 opacity-80"
       />
-      {haloField}
+      <DotField
+        tone="light"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-60"
+      />
 
       <div className="relative w-full max-w-sm">
         <FadeIn>
-          <Link
-            href="/"
-            className="mb-10 block text-center font-display text-lg font-semibold tracking-tight text-ink-900"
-          >
-            Clean<span className="text-brand-600">Connect</span>
+          <Link href="/" className="mb-10 flex justify-center">
+            <DotLogo />
           </Link>
         </FadeIn>
 
         <FadeIn delay={0.08}>
-          <SpotlightCard className="rounded-2xl p-8">
-            <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-gold-500">
+          <SpotlightCard className="rounded-xl p-8">
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-600">
               Account recovery
             </span>
             <h1 className="mt-2 font-display text-xl font-semibold text-ink-900">
@@ -98,32 +95,15 @@ export default function ForgotPasswordPage() {
                   </p>
                 )}
 
-                <div className="relative">
-                  {loading && (
-                    <motion.span
-                      aria-hidden
-                      className="absolute -inset-2 -z-10 rounded-full bg-gold-400/40 blur-lg"
-                      animate={{
-                        opacity: [0.3, 0.7, 0.3],
-                        scale: [0.96, 1.04, 0.96],
-                      }}
-                      transition={{
-                        duration: 1.4,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  )}
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    whileTap={{ scale: 0.94 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    className="btn-primary w-full py-2.5"
-                  >
-                    {loading ? "Sending…" : "Send reset link"}
-                  </motion.button>
-                </div>
+                <motion.button
+                  type="submit"
+                  disabled={loading}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  className="btn-primary w-full py-2.5"
+                >
+                  {loading ? "Sending…" : "Send reset link"}
+                </motion.button>
               </form>
             )}
           </SpotlightCard>

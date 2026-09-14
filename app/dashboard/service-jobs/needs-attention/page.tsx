@@ -4,6 +4,7 @@ import { requireCompany } from "@/lib/dashboard/requireCompany";
 import { CompanyNav } from "@/components/dashboard/CompanyNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { CATEGORY_LABEL, CATEGORY_EMOJI, type ServiceCategory } from "@/lib/buildings/categories";
+import { StatusDot } from "@/components/status/StatusDot";
 
 type FlaggedRecord = {
   id: string;
@@ -52,7 +53,7 @@ export default async function NeedsAttentionPage() {
             >
               ← Today&apos;s jobs
             </Link>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-amber-600">
+            <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-brand-700">
               Needs attention
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold text-ink-900 sm:text-3xl">
@@ -94,9 +95,7 @@ export default async function NeedsAttentionPage() {
                           </p>
                         )}
                       </div>
-                      <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-                        Needs attention
-                      </span>
+                      <StatusDot status="flagged" className="shrink-0" />
                     </Link>
                   </li>
                 ))}

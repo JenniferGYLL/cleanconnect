@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { DotLogo } from "@/components/brand/DotLogo";
 
 export default function CustomerSignupPage() {
   const [fullName, setFullName] = useState("");
@@ -44,10 +45,10 @@ export default function CustomerSignupPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-surface px-6">
         <div className="max-w-md text-center">
-          <h1 className="font-display text-2xl font-semibold text-slate-900">
+          <h1 className="font-display text-2xl font-semibold text-ink-900">
             You&apos;re almost in
           </h1>
-          <p className="mt-3 text-slate-500">
+          <p className="mt-3 text-ink-700/60">
             Check your email to verify your address, then sign in. If your
             building manager has already added you, your building will be
             waiting for you.
@@ -66,24 +67,21 @@ export default function CustomerSignupPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-16">
       <div className="w-full max-w-md">
-        <Link
-          href="/"
-          className="mb-10 block text-center font-display text-lg font-semibold tracking-tight text-slate-900"
-        >
-          Clean<span className="text-brand-600">Connect</span>
+        <Link href="/" className="mb-10 flex justify-center">
+          <DotLogo />
         </Link>
 
-        <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.2)]">
-          <h1 className="font-display text-xl font-semibold text-slate-900">
+        <div className="rounded-2xl border border-ink-900/8 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(23,25,27,0.15)]">
+          <h1 className="font-display text-xl font-semibold text-ink-900">
             Create your resident account
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-ink-700/60">
             See what&apos;s actually been done in your building.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-ink-800">
                 Full name
               </span>
               <input
@@ -95,7 +93,7 @@ export default function CustomerSignupPage() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-ink-800">
                 Phone (optional)
               </span>
               <input
@@ -106,7 +104,7 @@ export default function CustomerSignupPage() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-ink-800">
                 Email
               </span>
               <input
@@ -119,7 +117,7 @@ export default function CustomerSignupPage() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-ink-800">
                 Password
               </span>
               <input
@@ -148,7 +146,7 @@ export default function CustomerSignupPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-ink-700/60">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-brand-600">
             Sign in

@@ -193,7 +193,7 @@ function Stat({
     <div className="glass-surface rounded-2xl p-4 text-center">
       <p
         className={`font-display text-xl font-semibold ${
-          tone === "warn" ? "text-amber-600" : "text-ink-900"
+          tone === "warn" ? "text-brand-600" : "text-ink-900"
         }`}
       >
         {value}

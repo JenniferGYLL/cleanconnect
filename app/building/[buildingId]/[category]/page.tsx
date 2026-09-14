@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CustomerNav } from "@/components/dashboard/CustomerNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { FeedbackWidget, type OwnFeedback } from "@/components/resident/FeedbackWidget";
+import { StatusDot } from "@/components/status/StatusDot";
 import { CATEGORY_LABEL, CATEGORY_EMOJI, isServiceCategory } from "@/lib/buildings/categories";
 
 type RecordPhoto = { id: string; url: string };
@@ -150,14 +151,14 @@ export default async function ResidentCategoryPage({
                         </span>
                       </div>
                       {record.issue_status === "flagged" && (
-                        <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                          Needs Attention — being looked at
-                        </span>
+                        <StatusDot
+                          status="flagged"
+                          label="Needs attention — being looked at"
+                          className="mt-2"
+                        />
                       )}
                       {record.issue_status === "resolved" && (
-                        <span className="mt-2 inline-flex rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-                          Issue resolved
-                        </span>
+                        <StatusDot status="resolved" label="Issue resolved" className="mt-2" />
                       )}
                       {record.notes && (
                         <p className="mt-2 text-sm text-ink-700/70">{record.notes}</p>

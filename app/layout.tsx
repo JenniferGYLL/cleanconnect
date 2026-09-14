@@ -1,24 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
+import { Fraunces, Manrope, IBM_Plex_Mono } from "next/font/google";
 import { PwaRegister } from "@/components/pwa/PwaRegister";
 import "./globals.css";
 
-const body = Plus_Jakarta_Sans({
+// Manrope: quiet, precise, geometric UI sans for body copy and interface
+// text — deliberately not Inter/Roboto.
+const body = Manrope({
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
 });
 
-const display = Space_Grotesk({
+// Fraunces: an editorial serif with soft-tech optical sizing. Used only for
+// display headlines — the thing that should feel premium and considered
+// rather than like a standard SaaS headline.
+const display = Fraunces({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
 });
 
+// IBM Plex Mono: used sparingly for technical/precise details — eyebrow
+// labels, timestamps, the DOT wordmark — to reinforce the "architectural
+// technology" register without adding a second display face.
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "CleanConnect",
+  title: "DOT",
   description:
-    "CleanConnect connects cleaning companies with the customers who need them.",
+    "DOT connects property managers, contractors and residents around one shared, evidence-backed record of building services.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -31,7 +46,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "CleanConnect",
+    title: "DOT",
   },
 };
 
@@ -39,7 +54,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#14b391",
+  themeColor: "#17191b",
 };
 
 export default function RootLayout({
@@ -48,7 +63,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${body.variable} ${display.variable}`}>
+    <html
+      lang="en"
+      className={`${body.variable} ${display.variable} ${mono.variable}`}
+    >
       <body>
         <PwaRegister />
         {children}

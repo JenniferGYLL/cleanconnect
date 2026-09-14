@@ -63,18 +63,18 @@ export default async function ResolveNeedsAttentionPage({
             {(feedbackRows ?? []).map((f) => (
               <p
                 key={f.id}
-                className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                className="glass-surface mt-2 rounded-xl border-l-2 border-l-brand-500 px-3 py-2 text-sm text-ink-800"
               >
                 A resident said: &ldquo;{f.comment}&rdquo;
               </p>
             ))}
             {record.notes && (
-              <p className="mt-2 rounded-xl bg-white/60 px-3 py-2 text-sm text-ink-700/70">
+              <p className="mt-2 rounded-xl bg-ink-900/[0.03] px-3 py-2 text-sm text-ink-700/70">
                 Original visit note: {record.notes}
               </p>
             )}
             {record.issue_status === "resolved" && (
-              <p className="mt-2 rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800">
+              <p className="mt-2 rounded-xl bg-ink-900/[0.03] px-3 py-2 text-sm text-ink-700">
                 This has already been marked resolved.
               </p>
             )}

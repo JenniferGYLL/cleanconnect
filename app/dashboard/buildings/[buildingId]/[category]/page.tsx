@@ -4,6 +4,7 @@ import { requireCompany } from "@/lib/dashboard/requireCompany";
 import { CompanyNav } from "@/components/dashboard/CompanyNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { CATEGORY_LABEL, CATEGORY_EMOJI, isServiceCategory } from "@/lib/buildings/categories";
+import { StatusDot } from "@/components/status/StatusDot";
 
 type RecordPhoto = { id: string; url: string; kind: string };
 type ServiceRecordWithPhotos = {
@@ -133,15 +134,8 @@ export default async function CategoryHistoryPage({
                           })}
                         </span>
                       </div>
-                      {record.issue_status === "flagged" && (
-                        <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                          Needs attention
-                        </span>
-                      )}
-                      {record.issue_status === "resolved" && (
-                        <span className="mt-2 inline-flex rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-                          Resolved
-                        </span>
+                      {record.issue_status !== "none" && (
+                        <StatusDot status={record.issue_status} className="mt-2" />
                       )}
                       {record.notes && (
                         <p className="mt-2 text-sm text-ink-700/70">{record.notes}</p>

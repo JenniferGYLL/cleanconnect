@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { DotLogo } from "@/components/brand/DotLogo";
 
 type OrgType = "property_manager" | "contractor";
 
@@ -52,10 +53,10 @@ export default function CompanySignupPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-surface px-6">
         <div className="max-w-md text-center">
-          <h1 className="font-display text-2xl font-semibold text-slate-900">
+          <h1 className="font-display text-2xl font-semibold text-ink-900">
             You&apos;re almost in
           </h1>
-          <p className="mt-3 text-slate-500">
+          <p className="mt-3 text-ink-700/60">
             Check your email to verify your address. Once your account is
             approved, you&apos;ll be able to sign in and see your leads.
           </p>
@@ -73,23 +74,20 @@ export default function CompanySignupPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-16">
       <div className="w-full max-w-md">
-        <Link
-          href="/"
-          className="mb-10 block text-center font-display text-lg font-semibold tracking-tight text-slate-900"
-        >
-          Clean<span className="text-brand-600">Connect</span>
+        <Link href="/" className="mb-10 flex justify-center">
+          <DotLogo />
         </Link>
 
-        <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.2)]">
-          <h1 className="font-display text-xl font-semibold text-slate-900">
+        <div className="rounded-2xl border border-ink-900/8 bg-white p-8 shadow-[0_20px_60px_-30px_rgba(23,25,27,0.15)]">
+          <h1 className="font-display text-xl font-semibold text-ink-900">
             Register your organisation
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Get set up on Clean Connect in a couple of minutes.
+          <p className="mt-1 text-sm text-ink-700/60">
+            Get set up on DOT in a couple of minutes.
           </p>
 
           <div className="mt-6">
-            <span className="mb-2 block text-sm font-medium text-slate-700">
+            <span className="mb-2 block text-sm font-medium text-ink-800">
               What best describes you?
             </span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -99,11 +97,11 @@ export default function CompanySignupPage() {
                 className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
                   orgType === "property_manager"
                     ? "border-brand-600 bg-brand-50 text-brand-900"
-                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    : "border-ink-900/12 text-ink-700 hover:border-ink-900/25"
                 }`}
               >
                 <span className="block font-medium">Building / property manager</span>
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-ink-700/60">
                   I manage one or more buildings
                 </span>
               </button>
@@ -113,11 +111,11 @@ export default function CompanySignupPage() {
                 className={`rounded-xl border px-4 py-3 text-left text-sm transition ${
                   orgType === "contractor"
                     ? "border-brand-600 bg-brand-50 text-brand-900"
-                    : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    : "border-ink-900/12 text-ink-700 hover:border-ink-900/25"
                 }`}
               >
                 <span className="block font-medium">Contractor / service provider</span>
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-ink-700/60">
                   Cleaning, gardening, maintenance and more
                 </span>
               </button>
@@ -200,7 +198,7 @@ export default function CompanySignupPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-ink-700/60">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-brand-600">
             Sign in
@@ -220,7 +218,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1 block text-sm font-medium text-ink-800">
         {label}
       </span>
       {children}

@@ -70,13 +70,14 @@ export default async function ServiceJobsPage() {
             <FadeIn delay={0.02} className="mt-4">
               <Link
                 href="/dashboard/service-jobs/needs-attention"
-                className="flex items-center justify-between rounded-2xl bg-amber-100 px-5 py-3 text-sm font-medium text-amber-900 transition hover:bg-amber-200"
+                className="glass-surface flex items-center justify-between rounded-xl px-5 py-3 text-sm font-medium text-ink-900 transition hover:border-brand-500/40"
               >
-                <span>
+                <span className="flex items-center gap-2">
+                  <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-brand-500" />
                   {needsAttentionCount} visit{needsAttentionCount === 1 ? "" : "s"} flagged
                   Needs Attention
                 </span>
-                <span aria-hidden>→</span>
+                <span aria-hidden className="text-ink-700/50">→</span>
               </Link>
             </FadeIn>
           )}

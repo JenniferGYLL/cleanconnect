@@ -6,6 +6,8 @@ import { SiteNav } from "@/components/layout/SiteNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { SpotlightCard } from "@/components/motion/SpotlightCard";
 import { WaveDivider } from "@/components/motion/WaveDivider";
+import { DotField } from "@/components/motion/DotField";
+import { DotLogo } from "@/components/brand/DotLogo";
 
 const loopSteps = [
   {
@@ -58,73 +60,50 @@ const whyItems = [
   },
 ];
 
-function RippleRings() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute -right-16 top-24 hidden h-72 w-72 sm:block"
-    >
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          className="absolute inset-0 rounded-full border border-brand-500/25"
-          initial={{ scale: 0.5, opacity: 0.6 }}
-          animate={{ scale: 1.6, opacity: 0 }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            delay: i * 1.3,
-            ease: "easeOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 function HeroMockup() {
   return (
-    <div className="relative mx-auto hidden max-w-sm sm:block lg:mx-0">
-      <RippleRings />
-
+    <div className="relative mx-auto hidden max-w-sm sm:block lg:mx-0 lg:ml-10">
       <motion.div
-        initial={{ opacity: 0, y: 24, rotate: -2 }}
-        animate={{ opacity: 1, y: 0, rotate: -2 }}
-        transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
       >
-        <SpotlightCard className="rounded-2xl p-5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-              🧹
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-ink-900">
-                Common area cleaning — Level 3
-              </p>
-              <p className="text-xs text-ink-700/50">Logged 12 minutes ago</p>
-            </div>
+        <SpotlightCard className="rounded-xl p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-700/45">
+              Service record
+            </p>
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brand-500" />
           </div>
-          <p className="mt-3 text-sm text-ink-700/70">
+          <p className="mt-2.5 text-sm font-semibold text-ink-900">
+            Common area cleaning — Level 3
+          </p>
+          <p className="mt-2 text-sm text-ink-700/70">
             &ldquo;Bins emptied, lobby glass cleaned, mopped throughout.&rdquo;
           </p>
+          <div className="mt-4 flex items-center justify-between border-t border-ink-900/8 pt-3 text-xs text-ink-700/50">
+            <span>Logged 12 minutes ago</span>
+            <span className="font-mono">2 photos</span>
+          </div>
         </SpotlightCard>
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 24, rotate: 3 }}
-        animate={{ opacity: 1, y: 0, rotate: 3 }}
-        transition={{ duration: 0.8, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-        className="relative -mt-6 ml-10 w-64"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        className="relative -mt-4 ml-14 w-60"
       >
-        <SpotlightCard className="rounded-2xl p-4">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-brand-700">
+        <SpotlightCard className="rounded-xl p-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-700/45">
             Resident feedback
           </p>
-          <div className="mt-3 flex items-center gap-3">
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-              👍 Good
+          <div className="mt-2.5 flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-ink-900/5 px-2.5 py-1 text-xs font-medium text-ink-800">
+              <span aria-hidden className="h-[6px] w-[6px] rounded-full bg-ink-700/50" />
+              Good
             </span>
-            <span className="text-[11px] text-ink-700/50">from 2 residents</span>
+            <span className="text-[11px] text-ink-700/45">from 2 residents</span>
           </div>
         </SpotlightCard>
       </motion.div>
@@ -140,32 +119,24 @@ export function HomeMarketing() {
       {/* Hero */}
       <section className="bg-grain relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 bg-mesh-1" />
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 right-[-10%] h-[420px] w-[420px] rounded-full bg-brand-200/40 blur-3xl"
-          animate={{ y: [0, 24, 0], x: [0, -16, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute top-40 left-[-8%] h-[360px] w-[360px] rounded-full bg-accent-400/20 blur-3xl"
-          animate={{ y: [0, -20, 0], x: [0, 20, 0] }}
-          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        <DotField
+          tone="light"
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-70"
         />
 
         <div className="relative mx-auto grid max-w-6xl gap-16 px-6 pb-28 pt-24 sm:pt-32 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
             <FadeIn>
-              <span className="inline-flex items-center gap-2 rounded-full border border-brand-900/10 bg-white/80 px-4 py-1.5 text-xs font-medium tracking-wide text-ink-700">
+              <span className="inline-flex items-center gap-2 rounded-md border border-ink-900/10 bg-white/80 px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
                 A building service transparency platform
               </span>
             </FadeIn>
 
             <FadeIn delay={0.08}>
-              <h1 className="mt-8 max-w-xl font-display text-5xl font-semibold leading-[1.05] tracking-tight text-ink-900 sm:text-6xl">
+              <h1 className="mt-8 max-w-xl font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-ink-900 sm:text-6xl">
                 See what has been{" "}
-                <span className="bg-gradient-to-r from-brand-600 to-accent-600 bg-clip-text text-transparent">
+                <span className="italic text-brand-600">
                   done in your building.
                 </span>
               </h1>
@@ -209,8 +180,8 @@ export function HomeMarketing() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-6 lg:grid-cols-3">
             <FadeIn>
-              <SpotlightCard className="group h-full rounded-2xl p-8">
-                <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
+              <SpotlightCard className="group h-full rounded-xl p-8">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-700">
                   For property managers
                 </span>
                 <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
@@ -232,8 +203,8 @@ export function HomeMarketing() {
             </FadeIn>
 
             <FadeIn delay={0.08}>
-              <SpotlightCard className="group h-full rounded-2xl p-8">
-                <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
+              <SpotlightCard className="group h-full rounded-xl p-8">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-700">
                   For contractors
                 </span>
                 <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
@@ -255,8 +226,8 @@ export function HomeMarketing() {
             </FadeIn>
 
             <FadeIn delay={0.16}>
-              <SpotlightCard className="group h-full rounded-2xl p-8">
-                <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
+              <SpotlightCard className="group h-full rounded-xl p-8">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-700">
                   For residents
                 </span>
                 <h3 className="mt-4 font-display text-2xl font-semibold text-ink-900">
@@ -284,7 +255,7 @@ export function HomeMarketing() {
       <section id="how-it-works" className="relative bg-foam-100 py-28">
         <div className="mx-auto max-w-6xl px-6">
           <FadeIn>
-            <span className="text-xs font-medium uppercase tracking-widest text-brand-700">
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-700">
               How it works
             </span>
             <h2 className="mt-4 max-w-lg font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl">
@@ -302,8 +273,8 @@ export function HomeMarketing() {
             >
               <path
                 d="M0,12 C150,-4 200,28 320,12 C440,-4 480,28 600,12 C700,-2 750,26 900,10"
-                stroke="#0a8f76"
-                strokeOpacity="0.25"
+                stroke="#c07a33"
+                strokeOpacity="0.22"
                 strokeWidth="1.5"
                 strokeDasharray="2 8"
                 strokeLinecap="round"
@@ -313,7 +284,7 @@ export function HomeMarketing() {
             {loopSteps.map((step, i) => (
               <FadeIn key={step.number} delay={i * 0.08} className={step.offset}>
                 <div className="relative">
-                  <div className="relative z-10 inline-flex h-12 w-12 items-center justify-center rounded-full border border-brand-900/10 bg-white font-display text-sm font-semibold text-ink-900 shadow-tint-sm">
+                  <div className="relative z-10 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-ink-900/10 bg-white font-mono text-xs font-medium text-ink-800">
                     {step.number}
                   </div>
                   <h3 className="mt-5 font-display text-lg font-semibold text-ink-900">
@@ -326,20 +297,21 @@ export function HomeMarketing() {
           </div>
         </div>
 
-        <WaveDivider
-          fill="#061b15"
-          className="absolute -bottom-px left-0 right-0"
-        />
+        <WaveDivider fill="#17191b" className="absolute -bottom-px left-0 right-0" />
       </section>
 
-      {/* Why CleanConnect — dark band */}
+      {/* Why DOT — dark band */}
       <section className="bg-grain relative overflow-hidden bg-ink-900 pb-24 pt-20 text-white">
         <div className="pointer-events-none absolute inset-0 bg-mesh-dark opacity-70" />
+        <DotField
+          tone="dark"
+          className="pointer-events-none absolute inset-0 h-full w-full opacity-60"
+        />
 
         <div className="relative mx-auto max-w-6xl px-6">
           <FadeIn>
-            <span className="text-xs font-medium uppercase tracking-widest text-brand-300">
-              Why CleanConnect
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-300">
+              Why DOT
             </span>
             <h2 className="mt-4 max-w-lg font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               A simple front end. A record-keeping backend that never forgets.
@@ -349,8 +321,8 @@ export function HomeMarketing() {
           <div className="mt-14 grid gap-6 lg:grid-cols-3">
             {whyItems.map((item, i) => (
               <FadeIn key={item.title} delay={i * 0.1}>
-                <SpotlightCard dark className="h-full rounded-2xl p-7">
-                  <span className="text-xs font-medium uppercase tracking-widest text-accent-300">
+                <SpotlightCard dark className="h-full rounded-xl p-7">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-brand-300/90">
                     {item.label}
                   </span>
                   <h3 className="mt-4 font-display text-xl font-semibold text-white">
@@ -369,12 +341,8 @@ export function HomeMarketing() {
       {/* Footer — continues the dark band for a committed transition */}
       <footer className="bg-ink-950 py-10 text-white/50">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm sm:flex-row">
-          <span className="font-display font-semibold text-white/80">
-            CleanConnect
-          </span>
-          <span>
-            © {new Date().getFullYear()} CleanConnect. All rights reserved.
-          </span>
+          <DotLogo theme="dark" size="sm" />
+          <span>© {new Date().getFullYear()} DOT. All rights reserved.</span>
         </div>
       </footer>
     </main>

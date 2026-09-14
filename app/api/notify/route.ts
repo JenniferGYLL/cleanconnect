@@ -123,7 +123,7 @@ function resolveNotification(payload: WebhookPayload): Notification | null {
       return {
         userId: lead.company_id,
         title: "New booking request",
-        body: "A customer just requested a booking — open CleanConnect to respond.",
+        body: "A customer just requested a booking — open DOT to respond.",
       };
     }
 

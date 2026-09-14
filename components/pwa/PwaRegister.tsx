@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DotMark } from "@/components/brand/DotMark";
 
 const DISMISS_KEY = "cc-install-prompt-dismissed-until";
 const DISMISS_DAYS = 14;
@@ -99,13 +100,13 @@ export function PwaRegister() {
 
   return (
     <div className="fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:right-4 sm:w-80">
-      <div className="glass-surface flex items-center gap-3 rounded-2xl border border-ink-900/10 bg-white/95 p-3.5 shadow-tint-sm backdrop-blur-xl">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-sm font-semibold text-white">
-          CC
+      <div className="glass-surface flex items-center gap-3 rounded-xl p-3.5 shadow-tint-sm">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-900">
+          <DotMark size={18} theme="dark" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-ink-900">
-            Install CleanConnect
+            Install DOT
           </p>
           <p className="mt-0.5 text-xs text-ink-700/60">
             {installEvent
@@ -117,7 +118,7 @@ export function PwaRegister() {
           {installEvent && (
             <button
               onClick={handleInstall}
-              className="rounded-full bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-600"
+              className="rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-semibold text-foam-50 transition hover:bg-ink-800"
             >
               Install
             </button>
@@ -125,7 +126,7 @@ export function PwaRegister() {
           <button
             onClick={handleDismiss}
             aria-label="Dismiss"
-            className="rounded-full px-2 py-1.5 text-xs text-ink-700/50 hover:text-ink-900"
+            className="rounded-lg px-2 py-1.5 text-xs text-ink-700/50 hover:text-ink-900"
           >
             ✕
           </button>

@@ -117,40 +117,48 @@ export function FeedbackWidget({
           type="button"
           onClick={toggleLike}
           disabled={saving}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-            liked ? "bg-brand-600 text-white" : "bg-ink-900/5 text-ink-700 hover:bg-ink-900/10"
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            liked ? "bg-ink-900 text-foam-50" : "bg-ink-900/5 text-ink-700/70 hover:bg-ink-900/10"
           }`}
         >
-          👍 {counts.likeCount > 0 ? counts.likeCount : "Like"}
+          <span
+            aria-hidden
+            className={`h-[6px] w-[6px] rounded-full ${liked ? "bg-foam-50" : "bg-ink-700/40"}`}
+          />
+          {counts.likeCount > 0 ? counts.likeCount : "Like"}
         </button>
         <button
           type="button"
           onClick={() => setStatusAndSave("good")}
           disabled={saving}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-            status === "good" ? "bg-brand-50 text-brand-700 ring-1 ring-brand-600" : "bg-ink-900/5 text-ink-700 hover:bg-ink-900/10"
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            status === "good"
+              ? "bg-ink-900/8 text-ink-900 ring-1 ring-ink-900/25"
+              : "bg-ink-900/5 text-ink-700/70 hover:bg-ink-900/10"
           }`}
         >
+          <span aria-hidden className="h-[6px] w-[6px] rounded-full bg-ink-700/50" />
           Good{counts.goodCount > 0 ? ` (${counts.goodCount})` : ""}
         </button>
         <button
           type="button"
           onClick={() => setStatusAndSave("needs_attention")}
           disabled={saving}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
             status === "needs_attention"
-              ? "bg-amber-100 text-amber-800 ring-1 ring-amber-500"
-              : "bg-ink-900/5 text-ink-700 hover:bg-ink-900/10"
+              ? "bg-brand-50 text-brand-800 ring-1 ring-brand-500"
+              : "bg-ink-900/5 text-ink-700/70 hover:bg-ink-900/10"
           }`}
         >
+          <span aria-hidden className="h-[6px] w-[6px] rounded-full bg-brand-500" />
           Needs Attention{counts.needsAttentionCount > 0 ? ` (${counts.needsAttentionCount})` : ""}
         </button>
         <button
           type="button"
           onClick={() => setShowCommentBox((v) => !v)}
-          className="rounded-full px-3 py-1.5 text-xs font-medium text-ink-700/60 hover:text-ink-900"
+          className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-700/50 hover:text-ink-900"
         >
-          💬 {counts.commentCount > 0 ? counts.commentCount : "Comment"}
+          {counts.commentCount > 0 ? `${counts.commentCount} comments` : "Comment"}
         </button>
       </div>
 

@@ -114,8 +114,8 @@ export default async function MyBookingsPage() {
             </h1>
             <p className="mt-1 text-sm text-ink-700/60">
               Any residential cleaning you&apos;ve requested through
-              CleanConnect directly, separate from your building&apos;s
-              service history.
+              DOT directly, separate from your building&apos;s service
+              history.
             </p>
           </FadeIn>
 

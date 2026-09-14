@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import LogoutButton from "@/app/dashboard/LogoutButton";
 import { NotificationOptIn } from "@/components/notifications/NotificationOptIn";
+import { DotLogo } from "@/components/brand/DotLogo";
 
 export type CustomerTab = "home" | "profile";
 
@@ -27,12 +28,9 @@ export function CustomerNav({
 
   return (
     <header className="sticky top-4 z-40 mx-auto mb-10 w-full max-w-3xl px-4">
-      <div className="glass-surface spotlight-border flex items-center justify-between gap-4 rounded-full px-3 py-2">
-        <Link
-          href="/home"
-          className="shrink-0 pl-2 font-display text-sm font-semibold text-ink-900"
-        >
-          CleanConnect
+      <div className="glass-surface spotlight-border flex items-center justify-between gap-4 rounded-xl px-4 py-2.5">
+        <Link href="/home" className="shrink-0 pl-1">
+          <DotLogo size="sm" />
         </Link>
 
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
@@ -40,10 +38,10 @@ export function CustomerNav({
             <Link
               key={tab.key}
               href={tab.href}
-              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
+              className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium transition ${
                 active === tab.key
-                  ? "bg-ink-900 text-white shadow-tint-sm"
-                  : "text-ink-700 hover:bg-white/70"
+                  ? "bg-ink-900 text-foam-50"
+                  : "text-ink-700/70 hover:bg-ink-900/[0.04] hover:text-ink-900"
               }`}
             >
               {tab.label}
@@ -59,7 +57,7 @@ export function CustomerNav({
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-xs font-semibold text-white transition hover:bg-brand-600"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-900 text-xs font-semibold text-foam-50 transition hover:bg-ink-800"
             aria-label="Account menu"
           >
             {initial}

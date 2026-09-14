@@ -1,6 +1,6 @@
 {
-  "name": "CleanConnect — Building Service Records",
-  "short_name": "CleanConnect",
+  "name": "DOT — Building Service Records",
+  "short_name": "DOT",
   "description": "See what has been done in your building — service records, proof photos, and feedback in one place.",
   "id": "/",
   "start_url": "/?source=pwa",

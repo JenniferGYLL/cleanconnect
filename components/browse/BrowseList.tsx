@@ -10,7 +10,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "rated", label: "Highest rated" },
   { value: "reviewed", label: "Most reviews" },
   { value: "fastest", label: "Fastest to respond" },
-  { value: "newest", label: "Newest on CleanConnect" },
+  { value: "newest", label: "Newest on DOT" },
 ];
 
 const MIN_RATING_OPTIONS = [

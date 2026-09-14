@@ -8,6 +8,7 @@ import {
   type ResidentRow,
 } from "@/components/dashboard/BuildingResidentsManager";
 import { SERVICE_CATEGORIES, CATEGORY_LABEL, type ServiceCategory } from "@/lib/buildings/categories";
+import { StatusDot } from "@/components/status/StatusDot";
 
 type RawServiceRecord = {
   id: string;
@@ -197,21 +198,24 @@ export default async function BuildingDetailPage({
 
           {flagged.length > 0 && (
             <FadeIn delay={0.09} className="mt-8">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-600">
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.14em] text-brand-700">
                 Needs attention
               </p>
-              <ul className="divide-y divide-amber-200/60 overflow-hidden rounded-2xl bg-amber-50">
+              <ul className="glass-surface divide-y divide-ink-900/6 overflow-hidden rounded-xl">
                 {flagged.map((record) => (
-                  <li key={record.id} className="px-5 py-3">
+                  <li key={record.id} className="px-5 py-3.5">
                     <Link
                       href={`/dashboard/buildings/${building.id}/${record.category}`}
-                      className="flex items-center justify-between gap-3 text-sm font-medium text-amber-900 hover:underline"
+                      className="flex items-center justify-between gap-3 text-sm font-medium text-ink-900 hover:underline"
                     >
-                      <span>
+                      <span className="flex items-center gap-2">
+                        <StatusDot status="flagged" label="" />
                         {CATEGORY_LABEL[record.category]}
                         {record.contractor_name ? ` · ${record.contractor_name}` : ""}
                       </span>
-                      <span className="shrink-0 text-xs">{timeAgo(record.completed_at)}</span>
+                      <span className="shrink-0 text-xs text-ink-700/50">
+                        {timeAgo(record.completed_at)}
+                      </span>
                     </Link>
                   </li>
                 ))}

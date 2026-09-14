@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CustomerNav } from "@/components/dashboard/CustomerNav";
 import { FadeIn } from "@/components/motion/FadeIn";
 import { SERVICE_CATEGORIES, CATEGORY_LABEL, type ServiceCategory } from "@/lib/buildings/categories";
+import { StatusDot } from "@/components/status/StatusDot";
 
 type RawRecord = {
   id: string;
@@ -141,15 +142,8 @@ export default async function ResidentBuildingPage({
                         {timeAgo(record.completed_at)}
                       </span>
                     </div>
-                    {record.issue_status === "flagged" && (
-                      <span className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                        Needs attention
-                      </span>
-                    )}
-                    {record.issue_status === "resolved" && (
-                      <span className="mt-1 inline-flex rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-                        Resolved
-                      </span>
+                    {record.issue_status !== "none" && (
+                      <StatusDot status={record.issue_status} className="mt-1" />
                     )}
                     {record.contractor_name && (
                       <p className="mt-1 text-xs text-ink-700/50">{record.contractor_name}</p>
